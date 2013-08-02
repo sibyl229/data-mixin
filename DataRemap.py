@@ -1,6 +1,8 @@
 import numpy as np 
 import os
 import re
+from helpers import ColumnStack
+from local_paths import *
 
 '''Take a delimited file of a list of protein information, and select and reorder it,
 so that they all have 
@@ -8,30 +10,38 @@ so that they all have
     2) without any duplicate''' 
 
 CURR_PATH = os.path.dirname(__file__)
-RAW_INPUT_PATH = os.path.join(CURR_PATH, 'raw_inputs/')
+
 
 class ReMap(object):
 
     @classmethod
-    def get_data_of_target(cls, protIds, dataArray):
+    def get_data_of_target(cls, protIds, dataArray, outputPath=None):
         targetProtList = cls.get_target_proteinIDs()
 
         pIDtoIndex = {pid: i \
             for (i,pid) in reversed(list(enumerate(protIds)))} # revered iteration to ensure using first entry, in case of duplicate protein ID among entries
-        
-        def locateEntry(id):
-            entryIndex = pIDtoIndex.get(id, -1)
-            if entryIndex == -1:
-                entry = ['' for c in otherColNums]
-            else:
-                entry = list(dataArray[entryIndex])
-                
-            import pdb; pdb.set_trace()
-            return entry
-        vectorizedLocateEntry = np.vectorize(locateEntry,otypes=[object])
+       
+        # add an empty tuple to the end of the dataArray, for protein without data
+        emptyEntry = tuple(np.zeros(len(dataArray[0])))
+        newEndIndex = len(dataArray)
+        np.resize(dataArray, newEndIndex+1)
+        dataArray[-1] = emptyEntry # I intend to modify the dataArray itself, the warning is puzzling
 
-        selectedRowData = locateEntry(targetProtList)
-        return selectedRowData
+        @np.vectorize
+        def locateEntry(id):
+            entryIndex = pIDtoIndex.get(id, newEndIndex)
+            return entryIndex
+
+        selectedRows = locateEntry(targetProtList)
+        targetProtData = dataArray[selectedRows]
+
+        structTargetProtList = np.zeros((targetProtList.shape[0],),dtype=[('Uniprot', targetProtList.dtype.str)] )
+        structTargetProtList['Uniprot'] = targetProtList
+        targetIDAndData = ColumnStack.stack(structTargetProtList, targetProtData)
+        if outputPath:
+            with open(outputPath, 'w') as f:
+                np.savetxt(f, targetIDAndData, fmt='%s')        
+        return targetIDAndData
 
 
     @staticmethod
@@ -55,10 +65,10 @@ class ReMap(object):
 
 
 class DegRateData(object):
-
-    rawDataPath = os.path.join(RAW_INPUT_PATH, 'pr101183k_si_002_HeLa.csv')
+    inputName = 'pr101183k_si_002_HeLa.csv'
+    rawDataPath = os.path.join(RAW_INPUT_PATH, inputName)
     rawdata = np.genfromtxt(rawDataPath, delimiter='\t', 
-        usecols=[3,11], 
+        usecols=[3,11,10], 
         dtype=None, names=True)
     idColName = 'Uniprot'
     dataColNames = list(set(rawdata.dtype.names) - {idColName})
@@ -68,7 +78,8 @@ class DegRateData(object):
     @classmethod
     def get_data_of_target(cls):
         protIds, dataArray = cls.get_all_data()
-        return ReMap.get_data_of_target(protIds, dataArray)
+        outpath = os.path.join(FEATURE_FILE_PATH, 'featureFrom_'+cls.inputName)
+        return ReMap.get_data_of_target(protIds, dataArray, outpath)
 
     @classmethod
     def get_all_data(cls):
@@ -78,7 +89,6 @@ class DegRateData(object):
             cls._protIds = vectorized_get_major_id(rawProtIDs)
             cls._dataArray = cls.rawdata[cls.dataColNames]
         return cls._protIds, cls._dataArray
-            
 
 
     @staticmethod
