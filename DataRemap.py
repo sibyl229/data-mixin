@@ -3,6 +3,7 @@ import os
 import re
 from helpers import ColumnStack
 from local_paths import *
+from data import DegRateData
 
 '''Take a delimited file of a list of protein information, and select and reorder it,
 so that they all have 
@@ -10,103 +11,63 @@ so that they all have
     2) without any duplicate''' 
 
 
-class ReMap(object):
+def get_target_proteinIDs():
+    proteinsPath = os.path.join(CLEAN_INPUT_PATH, 'target_proteins.txt')
+    try:
+        with open(proteinsPath): pass
+    except IOError:
+        def extract_target_proteins():
+            majorIDs, otherData = DegRateData.get_all_data()
+            majorIDs = np.unique(majorIDs[majorIDs != 'None'])
+            with open(proteinsPath, 'w') as f:
+                np.savetxt(f, majorIDs, fmt=['%s'])
+        extract_target_proteins()
 
-    @classmethod
-    def get_data_of_target(cls, protIds, dataArray, outputPath=None):
-        targetProtList = cls.get_target_proteinIDs()
+    pIDs = None
+    with open(proteinsPath, 'r') as f:
+        pIDs = np.genfromtxt(f, dtype=None)
 
-        pIDtoIndex = {pid: i \
-            for (i,pid) in reversed(list(enumerate(protIds)))} # revered iteration to ensure using first entry, in case of duplicate protein ID among entries
-       
-        # add an empty tuple to the end of the dataArray, for protein without data
-        emptyEntry = tuple(np.zeros(len(dataArray[0])))
-        newEndIndex = len(dataArray)
-        np.resize(dataArray, newEndIndex+1)
-        dataArray[-1] = emptyEntry # I intend to modify the dataArray itself, the warning is puzzling
+    return pIDs
 
-        @np.vectorize
-        def locateEntry(id):
-            entryIndex = pIDtoIndex.get(id, newEndIndex)
-            return entryIndex
+targetProtList = get_target_proteinIDs()
 
-        selectedRows = locateEntry(targetProtList)
-        targetProtData = dataArray[selectedRows]
+# intended to be called by remap() below
+def _get_data_of_target(sourceProtIds, sourceData, outputPath=None):
+#    targetProtList = get_target_proteinIDs()
+    pIDtoIndex = {pid: i \
+        for (i,pid) in reversed(list(enumerate(sourceProtIds)))} # revered iteration to ensure using first entry, in case of duplicate protein ID among entries
 
-        structTargetProtList = np.zeros((targetProtList.shape[0],),dtype=[('Uniprot', targetProtList.dtype.str)] )
-        structTargetProtList['Uniprot'] = targetProtList
-        targetIDAndData = ColumnStack.stack(structTargetProtList, targetProtData)
-        if outputPath:
-            with open(outputPath, 'w') as f:
-                header = '\t'.join(targetIDAndData.dtype.names)+'\n'
-                f.write(header)
-                np.savetxt(f, targetIDAndData, fmt='%s')
-     
-        return targetIDAndData
+    # add an empty tuple to the end of the sourceData, for protein without data
+    emptyEntry = tuple(np.zeros(len(sourceData[0])))
+    newEndIndex = len(sourceData)
+    np.resize(sourceData, newEndIndex+1)
+    sourceData[-1] = emptyEntry # I intend to modify the sourceData itself, the warning is puzzling
 
+    @np.vectorize
+    def locateEntry(id):
+        entryIndex = pIDtoIndex.get(id, newEndIndex)
+        return entryIndex
 
-    @staticmethod
-    def get_target_proteinIDs():
-        proteinsPath = os.path.join(CLEAN_INPUT_PATH, 'target_proteins.txt')
-        try:
-            with open(proteinsPath): pass
-        except IOError:
-            def extract_target_proteins():
-                majorIDs, otherData = DegRateData.get_all_data()
-                majorIDs = np.unique(majorIDs[majorIDs != 'None'])
-                with open(proteinsPath, 'w') as f:
-                    np.savetxt(f, majorIDs, fmt=['%s'])
-            extract_target_proteins()
+    selectedRows = locateEntry(targetProtList)
+    targetProtData = sourceData[selectedRows]
 
-        pIDs = None
-        with open(proteinsPath, 'r') as f:
-            pIDs = np.genfromtxt(f, dtype=None)
-        return pIDs
-                    
+    structTargetProtList = np.zeros((targetProtList.shape[0],),dtype=[('Uniprot', targetProtList.dtype.str)] )
+    structTargetProtList['Uniprot'] = targetProtList
+    targetIDAndData = ColumnStack.stack(structTargetProtList, targetProtData)
+    if outputPath:
+        with open(outputPath, 'w') as f:
+            header = '\t'.join(targetIDAndData.dtype.names)+'\n'
+            f.write(header)
+            np.savetxt(f, targetIDAndData, fmt='%s')
+
+    return targetIDAndData
 
 
-class DegRateData(object):
-    inputName = 'pr101183k_si_002_HeLa.csv'
-    rawDataPath = os.path.join(RAW_INPUT_PATH, inputName)
-    rawdata = np.genfromtxt(rawDataPath, delimiter='\t', 
-        usecols=[3,10], 
-        dtype=None, names=True)
-    idColName = 'Uniprot'
-    dataColNames = list(set(rawdata.dtype.names) - {idColName})
-
-    _protIds, _dataArray = None, None
-
-    @classmethod
-    def get_data_of_target(cls):
-        protIds, dataArray = cls.get_all_data()
-        outpath = os.path.join(FEATURE_FILE_PATH, 'featureFrom_'+cls.inputName)
-        return ReMap.get_data_of_target(protIds, dataArray, outpath)
-
-    @classmethod
-    def get_all_data(cls):
-        if cls._protIds == None or cls._dataArray == None:
-            rawProtIDs = cls.rawdata[cls.idColName]
-            vectorized_get_major_id = np.vectorize(cls.get_major_id)
-            cls._protIds = vectorized_get_major_id(rawProtIDs)
-            cls._dataArray = cls.rawdata[cls.dataColNames]
-        return cls._protIds, cls._dataArray
+def remap(dataObj):
+    name = re.search(r'(.*)\.\w+', dataObj.inputName).group(1)
+    outpath = os.path.join(FEATURE_FILE_PATH, 'featureFrom_'+name+'.csv')
+    allIds, allData = dataObj.get_all_data()
+    return _get_data_of_target(allIds, allData, outpath)
+ 
 
 
-    @staticmethod
-    def get_major_id(idstring):
-        match = re.search(r'(\w+)',idstring)
-        if match:
-            return match.group(1)
-        else:
-            return None
-
-DegRateData.get_data_of_target()
-
-
-
-        # includeColumn='all', delimiter='\t', preprocess=None):
-        # if preprocess:
-        #     f = open(file_path, 'r')
-        #     data = preprocess(file_path)
-        # else:
-        #     np.genfromtxt()
