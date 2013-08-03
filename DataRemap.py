@@ -9,8 +9,6 @@ so that they all have
     1) the same proteins in the same ordering
     2) without any duplicate''' 
 
-CURR_PATH = os.path.dirname(__file__)
-
 
 class ReMap(object):
 
@@ -40,13 +38,16 @@ class ReMap(object):
         targetIDAndData = ColumnStack.stack(structTargetProtList, targetProtData)
         if outputPath:
             with open(outputPath, 'w') as f:
-                np.savetxt(f, targetIDAndData, fmt='%s')        
+                header = '\t'.join(targetIDAndData.dtype.names)+'\n'
+                f.write(header)
+                np.savetxt(f, targetIDAndData, fmt='%s')
+     
         return targetIDAndData
 
 
     @staticmethod
-    def get_target_proteinIDs():    
-        proteinsPath = os.path.join(CURR_PATH, 'input/', 'target_proteins.txt')
+    def get_target_proteinIDs():
+        proteinsPath = os.path.join(CLEAN_INPUT_PATH, 'target_proteins.txt')
         try:
             with open(proteinsPath): pass
         except IOError:
@@ -68,7 +69,7 @@ class DegRateData(object):
     inputName = 'pr101183k_si_002_HeLa.csv'
     rawDataPath = os.path.join(RAW_INPUT_PATH, inputName)
     rawdata = np.genfromtxt(rawDataPath, delimiter='\t', 
-        usecols=[3,11,10], 
+        usecols=[3,10], 
         dtype=None, names=True)
     idColName = 'Uniprot'
     dataColNames = list(set(rawdata.dtype.names) - {idColName})
@@ -93,7 +94,6 @@ class DegRateData(object):
 
     @staticmethod
     def get_major_id(idstring):
-        print idstring
         match = re.search(r'(\w+)',idstring)
         if match:
             return match.group(1)
