@@ -3,7 +3,7 @@ import os
 import re
 from helpers import ColumnStack
 from local_paths import *
-from data import DegRateData
+from data import * # DegRateData
 
 '''Take a delimited file of a list of protein information, and select and reorder it,
 so that they all have 
@@ -40,7 +40,8 @@ def _get_data_of_target(sourceProtIds, sourceData, outputPath=None):
     # add an empty tuple to the end of the sourceData, for protein without data
     emptyEntry = tuple(np.zeros(len(sourceData[0])))
     newEndIndex = len(sourceData)
-    np.resize(sourceData, newEndIndex+1)
+    sourceData = np.resize(sourceData, newEndIndex+1)
+
     sourceData[-1] = emptyEntry # I intend to modify the sourceData itself, the warning is puzzling
 
     @np.vectorize
@@ -53,7 +54,7 @@ def _get_data_of_target(sourceProtIds, sourceData, outputPath=None):
 
     structTargetProtList = np.zeros((targetProtList.shape[0],),dtype=[('Uniprot', targetProtList.dtype.str)] )
     structTargetProtList['Uniprot'] = targetProtList
-    targetIDAndData = ColumnStack.stack(structTargetProtList, targetProtData)
+    targetIDAndData = column_stack(structTargetProtList, targetProtData)
     if outputPath:
         with open(outputPath, 'w') as f:
             header = '\t'.join(targetIDAndData.dtype.names)+'\n'
@@ -64,10 +65,14 @@ def _get_data_of_target(sourceProtIds, sourceData, outputPath=None):
 
 
 def remap(dataObj):
-    name = re.search(r'(.*)\.\w+', dataObj.inputName).group(1)
+    name = re.search(r'(.*)\.\w+', dataObj.featureFileName).group(1)
     outpath = os.path.join(FEATURE_FILE_PATH, 'featureFrom_'+name+'.csv')
     allIds, allData = dataObj.get_all_data()
     return _get_data_of_target(allIds, allData, outpath)
- 
+
+
+if __name__ == '__main__':
+    remap(DegRateData())
+    remap(DisorderData()) 
 
 
