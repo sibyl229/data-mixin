@@ -1,6 +1,9 @@
 from __future__ import division
 import os
 import numpy as np
+import scipy as sp
+import matplotlib.pyplot as plt
+from sklearn.linear_model import Ridge
 from helpers import column_stack
 from settings import *
 #from DataRemap import remap
@@ -32,7 +35,6 @@ for (dirpath, dirnames, filenames) in os.walk(FEATURE_FILE_PATH):
         featureColNames = \
             [colName for colName in feature.dtype.names \
              if colName not in excluded]
-
 
         # stacking features
         if pIDs == None:
@@ -80,8 +82,9 @@ data = np.genfromtxt(combinedFeaturePath,
 featuresArray = data[:,1:]
 halfLifeArray = data[:,0]
 means = np.mean(featuresArray, axis=0)
-stds = np.std(featuresArray, axis=0)
-normalizedFeatures = (featuresArray - means) / stds
+#stds = np.std(featuresArray, axis=0)
+ranges = np.max(featuresArray, axis=0) - np.min(featuresArray, axis=0)
+normalizedFeatures = (featuresArray - means) / ranges
 normalizedFeaturePath = os.path.join(CLEAN_INPUT_PATH,
                                    'normalized_features.tsv')
 headerNormalizedFeature = combinedFeatures.dtype.names[1:] # ignore id column for now
@@ -93,5 +96,53 @@ with open(normalizedFeaturePath, 'w') as f:
     )
 
 
-import pdb; pdb.set_trace()
+#
+# correlation between feature and HL
+#
+f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex=True, sharey=True)
+subplots = [ax1, ax2, ax3, ax4]
+for (j, featName) in enumerate(otherColNames):
+    sbpl = subplots[j]
+    # generate a heatmap (a 2d array) whose 1st dimension (vertical) represent different halfLife,
+    # and 2nd dimension (horizontal) represents the feature score
+    heatmap, xedges, yedges = \
+        np.histogram2d(halfLifeArray, normalizedFeatures[:,j],
+                       range=[[0,100],[-1,1]], 
+                       bins=20)
+    # due to skewness, normalized by total number of proteins of similar half-life (in the same bin)
+    heatmap = heatmap / sum(heatmap,1) 
+    
+    extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+    # imshow display the 2darray like an image, so the heatmap needs to be rotated 
+    # by 90 degree counterclockwise, for its first and second dimensions along x-axis and
+    # y-axis respectively. 
+    sbpl.imshow(np.rot90(heatmap), 
+                interpolation="nearest", aspect='auto', extent=extent)
+    sbpl.grid(True)
+    sbpl.set_title(featName)
+    sbpl.set_xlabel('Half-life in hours')
+    sbpl.set_ylabel('Normalized feature score')
+
+# sbpl.set_xlim(-1,1)
+# sbpl.set_ylim(0,60)
+#plt.show()
+
+
+#
+# fit linear model
+#
+ridge = Ridge()
+ridge.fit(normalizedFeatures, halfLifeArray)
+yHat = ridge.predict(normalizedFeatures)
+print sp.stats.pearsonr(halfLifeArray, yHat)
+
+
+fig, ax = plt.subplots()
+ax.plot(halfLifeArray, yHat, 'o')
+ax.set_ylim(0,60)
+ax.set_xlim(0,60)
+ax.set_title('Correlation between the real and the predicted')
+#plt.show()
+
+#import pdb; pdb.set_trace()
 
