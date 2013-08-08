@@ -3,7 +3,8 @@ import os
 import re
 from helpers import *
 from settings import *
-from data import * # DegRateData
+from data import * 
+from compute_data import * # DegRateData
 
 '''Take a delimited file of a list of protein information, and select and reorder it,
 so that they all have 
