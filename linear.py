@@ -128,7 +128,7 @@ for (j, featName) in enumerate(otherColNames):
 
 # sbpl.set_xlim(-1,1)
 # sbpl.set_ylim(0,60)
-plt.show()
+#plt.show()
 
 
 #
