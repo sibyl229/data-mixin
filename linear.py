@@ -82,9 +82,9 @@ data = np.genfromtxt(combinedFeaturePath,
 featuresArray = data[:,1:]
 halfLifeArray = data[:,0]
 means = np.mean(featuresArray, axis=0)
-#stds = np.std(featuresArray, axis=0)
-ranges = np.max(featuresArray, axis=0) - np.min(featuresArray, axis=0)
-normalizedFeatures = (featuresArray - means) / ranges
+stds = np.std(featuresArray, axis=0)
+#ranges = np.max(featuresArray, axis=0) - np.min(featuresArray, axis=0)
+normalizedFeatures = (featuresArray - means) / stds
 normalizedFeaturePath = os.path.join(CLEAN_INPUT_PATH,
                                    'normalized_features.tsv')
 headerNormalizedFeature = combinedFeatures.dtype.names[1:] # ignore id column for now
@@ -107,10 +107,13 @@ for (j, featName) in enumerate(otherColNames):
     # and 2nd dimension (horizontal) represents the feature score
     heatmap, xedges, yedges = \
         np.histogram2d(halfLifeArray, normalizedFeatures[:,j],
-                       range=[[0,100],[-1,1]], 
+                       range=[[0,100],[-3,3]], 
                        bins=20)
     # due to skewness, normalized by total number of proteins of similar half-life (in the same bin)
-    heatmap = heatmap / sum(heatmap,1) 
+    num_prot_by_halflife_bins = np.sum(heatmap,axis=1)[:,None] 
+#    import pdb; pdb.set_trace()
+    heatmap = heatmap / num_prot_by_halflife_bins
+    heatmap = np.nan_to_num(heatmap)
     
     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
     # imshow display the 2darray like an image, so the heatmap needs to be rotated 
@@ -125,7 +128,7 @@ for (j, featName) in enumerate(otherColNames):
 
 # sbpl.set_xlim(-1,1)
 # sbpl.set_ylim(0,60)
-#plt.show()
+plt.show()
 
 
 #
