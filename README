@@ -15,10 +15,15 @@ pip install package_name
 ** How to use it
 - Get a copy of the raw_inputs/ directory and place it in the project root directory
 - create a directory called input/ at the project root, which contain a subdirectory called features (eg. mkdir -p input/features)
-- run compute_data.py to generate feature score files
+- run compute_data.py to generate feature score files 
+-- output: raw_inputs/MDB_Homo_sapiens_disorder_consensus.csv ...
 - run DataRemap.py to take features scores for a selected list of proteins
+-- output: 	input/features/featureFrom_MDB_Homo_sapiens_disorder_consensus.csv
+		input/features/featureFrom_pr101183k_si_002_HeLa.csv
+		input/target_proteins.txt
 - run linear.py to combine and normalize feature scores for the selected proteins, and run learning algorithm
-
+-- output: input/combined_features.tsv
+-- output: input/normalized_features.tsv
 
 ** Purpose of each files and directories (refer to those python modules for more detailed documentations)
 input/	      	   	 preprocessed data (eg. combined_features.tsv contains all feature scores for a select list of proteins)
