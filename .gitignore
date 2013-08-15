@@ -1,4 +1,5 @@
 *.pyc
 *.*~
-
+#*
+q
 raw_inputs/

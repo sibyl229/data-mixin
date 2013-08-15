@@ -82,5 +82,7 @@ def remap(dataObj):
 if __name__ == '__main__':
     remap(DegRateData())
     remap(DisorderData()) 
+    remap(SeqData())
+    remap(UbqSitesData())
 
 

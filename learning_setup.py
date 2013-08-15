@@ -81,10 +81,16 @@ data = np.genfromtxt(combinedFeaturePath,
                               delimiter='\t')
 featuresArray = data[:,1:]
 halfLifeArray = data[:,0]
+
 means = np.mean(featuresArray, axis=0)
 stds = np.std(featuresArray, axis=0)
-#ranges = np.max(featuresArray, axis=0) - np.min(featuresArray, axis=0)
-normalizedFeatures = (featuresArray - means) / stds
+maxes = np.max(featuresArray, axis=0)
+mins = np.min(featuresArray, axis=0)
+need_normalize = np.logical_or(maxes > 1, mins < -1)
+normalizedFeatures = featuresArray * 2 # so it resolves better on heatmap
+# only normalize features with range fall out side of [-1,1]
+normalizedFeatures[:,need_normalize] = \
+    ((featuresArray - means) / stds)[:,need_normalize]
 normalizedFeaturePath = os.path.join(CLEAN_INPUT_PATH,
                                    'normalized_features.tsv')
 headerNormalizedFeature = combinedFeatures.dtype.names[1:] # ignore id column for now
@@ -99,33 +105,41 @@ with open(normalizedFeaturePath, 'w') as f:
 #
 # correlation between feature and HL
 #
-f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex=True, sharey=True)
-subplots = [ax1, ax2, ax3, ax4]
-for (j, featName) in enumerate(otherColNames):
-    sbpl = subplots[j]
-    # generate a heatmap (a 2d array) whose 1st dimension (vertical) represent different halfLife,
-    # and 2nd dimension (horizontal) represents the feature score
-    heatmap, xedges, yedges = \
-        np.histogram2d(halfLifeArray, normalizedFeatures[:,j],
-                       range=[[0,100],[-3,3]], 
-                       bins=20)
-    # due to skewness, normalized by total number of proteins of similar half-life (in the same bin)
-    num_prot_by_halflife_bins = np.sum(heatmap,axis=1)[:,None] 
-#    import pdb; pdb.set_trace()
-    heatmap = heatmap / num_prot_by_halflife_bins
-    heatmap = np.nan_to_num(heatmap)
-    
-    extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-    # imshow display the 2darray like an image, so the heatmap needs to be rotated 
-    # by 90 degree counterclockwise, for its first and second dimensions along x-axis and
-    # y-axis respectively. 
-    sbpl.imshow(np.rot90(heatmap), 
-                interpolation="nearest", aspect='auto', extent=extent)
-    sbpl.grid(True)
-    sbpl.set_title(featName)
-    sbpl.set_xlabel('Half-life in hours')
-    sbpl.set_ylabel('Normalized feature score')
+numPerRow = 2
 
-# sbpl.set_xlim(-1,1)
-# sbpl.set_ylim(0,60)
-#plt.show()
+def plotFeatureAgainstHL(featureNames, numPerRow=2):
+    numRows = int(np.ceil(len(featureNames) / numPerRow))
+    f, subplots = plt.subplots(numRows, numPerRow, sharex=True, sharey=True)
+    #subplots = [ax1, ax2, ax3, ax4]
+    for (j, featName) in enumerate(featureNames):
+        sbpl = subplots[int(j/numPerRow)][ j % numPerRow]
+
+        # generate a heatmap (a 2d array) whose 1st dimension (vertical) represent different halfLife,
+        # and 2nd dimension (horizontal) represents the feature score
+        heatmap, xedges, yedges = \
+            np.histogram2d(halfLifeArray, normalizedFeatures[:,j],
+                           range=[[0,100],[-3,3]], 
+                           bins=20)
+        # due to skewness, normalized by total number of proteins of similar half-life (in the same bin)
+        num_prot_by_halflife_bins = np.sum(heatmap,axis=1)[:,None] 
+        #num_prot_by_halflife_bins = np.sum(heatmap,axis=0)[None,:] 
+    #    import pdb; pdb.set_trace()
+        heatmap = heatmap / num_prot_by_halflife_bins
+        heatmap = np.nan_to_num(heatmap)
+
+        extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+        # imshow display the 2darray like an image, so the heatmap needs to be rotated 
+        # by 90 degree counterclockwise, for its first and second dimensions along x-axis and
+        # y-axis respectively. 
+        sbpl.imshow(np.rot90(heatmap), 
+                    interpolation="nearest", aspect='auto', extent=extent)
+        sbpl.grid(True)
+        sbpl.set_title(featName)
+        sbpl.set_xlabel('Half-life in hours')
+        sbpl.set_ylabel('Normalized feature score')
+
+    # sbpl.set_xlim(-1,1)
+    # sbpl.set_ylim(0,60)
+    plt.show()
+
+plotFeatureAgainstHL(otherColNames, numPerRow=5)

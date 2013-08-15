@@ -28,7 +28,9 @@ ax.set_title('Correlation between the real and the predicted')
 
 #import pdb; pdb.set_trace()
 '''
-degr motif
-topfind
-length at N and C end
+degr motif (Ken box)
+number of Lysine
+topfind (true n-end) or just remove M
+take different length at N and C end (
+yaakov levy weizmann
 '''
