@@ -84,5 +84,8 @@ if __name__ == '__main__':
     remap(DisorderData()) 
     remap(SeqData())
     remap(UbqSitesData())
+    remap(AcetSitesData())
+    remap(MetSitesData())
+    remap(PhosphoSitesData())
 
 

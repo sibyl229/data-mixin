@@ -98,9 +98,6 @@ class SeqData(AbstractComputedData):
         dtype=[('Uniprot', '|S20'),
                ('numLysine', int),
                #('nEndAA', '|S2'),
-               # ('totalDisorderRatio', float),
-               # ('ntermDisorder', float),
-               # ('internaDisorderCnt', int),
         ]
         
         dtype.extend(
@@ -109,7 +106,6 @@ class SeqData(AbstractComputedData):
 
         allScores = [score(index, pid) for index,pid  in gff_help.get_all_prot()]  # the index is used to retrive the entry from the fasta file
         allScores = np.array(allScores,dtype=dtype)
-#        import pdb; pdb.set_trace() 
 
         return allScore
     
@@ -171,15 +167,7 @@ class DisorderData(AbstractComputedData):
         return aaDisorder >= 5
 
 
-class UbqSitesData(AbstractComputedData):
-
-
-    def __init__(self, forceCompute=False): 
-        rawInputName = 'Ubiquitination_site_dataset'
-        featureFileName = 'Ubiquitination_site.tsv'
-        super(UbqSitesData, self).__init__(
-             rawInputName, featureFileName, forceCompute=forceCompute)
-
+class AbstractSitesData(AbstractComputedData):
 
     def setup(self):
         # not sure why genfromtxt refuses to use the first line as
@@ -187,7 +175,7 @@ class UbqSitesData(AbstractComputedData):
         with open(self.rawInputFilePath,'r') as f:
             header = f.readline()
             header = header.rstrip().split('\t')
-        self.ubqData = \
+        self.sitesData = \
             np.genfromtxt(self.rawInputFilePath, 
                           dtype=None, 
                           names=header,
@@ -195,12 +183,12 @@ class UbqSitesData(AbstractComputedData):
                         )
 
         self.column = \
-            {cname:i for i,cname in enumerate(self.ubqData.dtype.names)}
+            {cname:i for i,cname in enumerate(self.sitesData.dtype.names)}
   
-        organism = self.ubqData['ORG']
-        self.ubqData = self.ubqData[organism=='human']
+        organism = self.sitesData['ORG']
+        self.sitesData = self.sitesData[organism=='human']
         locate = {} # locate the entries by protein ID
-        for i,entry in enumerate(self.ubqData):
+        for i,entry in enumerate(self.sitesData):
             pid = self.getEntryID(entry)
             if not locate.get(pid):
                 locate[pid] = []
@@ -216,51 +204,90 @@ class UbqSitesData(AbstractComputedData):
 
         self.setup()
 
-        def get_ubq_sites(pid):
+        def get__sites(pid):
             indexes = self.data_locate.get(pid)
             if indexes:
-                sites = self.ubqData[indexes]
+                sites = self.sitesData[indexes]
                 sites['MOD_RSD']
             else:
                 sites = []
             return sites
 
-        def score(pID):
-            ubqsites = get_ubq_sites(pID)
-            if ubqsites == []:
-                knownUbqSites = 0
+        def score(key, pID):
+            sites = get__sites(pID)
+            if sites == []:
+                knownSites = 0
             else:
-                knownUbqSites = 1
+                knownSites = 1
             
             return (pID,
-                len(ubqsites),
-                knownUbqSites,
+                len(sites),
+                knownSites,
                 )
 
         dtype=[('Uniprot', '|S20'),
-               ('numUbqSites', int),
-               ('knownUbqSites', int),
-               # ('totalDisorderRatio', float),
-               # ('ntermDisorder', float),
-               # ('internaDisorderCnt', int),
+               ('numSites', int),
+               ('knownSites', int),
         ]
+        #import pdb; pdb.set_trace() 
+        # tag colunm names by the class
+        dtype = [dtype[0]] + \
+                [('%s_%s' %(self.class_abbr(),fn),t) for (fn,t) in dtype[1:]]
         
-#        import pdb; pdb.set_trace() 
-        pIDs = set([self.getEntryID(entry) for entry in self.ubqData])
-        allScores = [score(pid) for pid in pIDs]
+
+        pIDs = seq_help.get_all_prot()
+        allScores = [score(key, pid) for key, pid in pIDs]
         allScores = np.array(allScores,dtype=dtype)
 
         return allScores
 
-    
-    def get_protein_(self, protId):
-        indices = self.gff_locate.get(protId, [])
-        return self.ubqData[indices]
-    
+    def class_abbr(self):
+        clssnm = self.__class__.__name__
+        return clssnm.rstrip('SitesData')[:3]
+
+
+class UbqSitesData(AbstractSitesData):
+
+    def __init__(self, forceCompute=False): 
+        rawInputName = 'Ubiquitination_site_dataset'
+        featureFileName = 'Ubiquitination_site.tsv'
+        self.abbr = 'Ubiq'
+        super(UbqSitesData, self).__init__(
+             rawInputName, featureFileName, forceCompute=forceCompute)
+
+class AcetSitesData(AbstractSitesData):
+
+    def __init__(self, forceCompute=False): 
+        rawInputName = 'Acetylation_site_dataset'
+        featureFileName = 'Acetylation_site.tsv'
+        super(AcetSitesData, self).__init__(
+             rawInputName, featureFileName, forceCompute=forceCompute)
+
+class PhosphoSitesData(AbstractSitesData):
+
+    def __init__(self, forceCompute=False): 
+        rawInputName = 'Phosphorylation_site_dataset'
+        featureFileName = 'Phosphorylation_site.tsv'
+        super(PhosphoSitesData, self).__init__(
+             rawInputName, featureFileName, forceCompute=forceCompute)
+
+class MetSitesData(AbstractSitesData):
+
+    def __init__(self, forceCompute=False): 
+        rawInputName = 'Methylation_site_dataset'
+        featureFileName = 'Methylation_site.tsv'
+        super(MetSitesData, self).__init__(
+             rawInputName, featureFileName, forceCompute=forceCompute)
 
         
 if __name__ == '__main__':
     SeqData(forceCompute=True)
-#    UbqSitesData(forceCompute=True)
-#    DisorderData(forceCompute=True)
+    DisorderData(forceCompute=True)
+    UbqSitesData(forceCompute=True)
+    MetSitesData(forceCompute=True)
+    AcetSitesData(forceCompute=True)
+    PhosphoSitesData(forceCompute=True)
+                     
+                 
+
 
