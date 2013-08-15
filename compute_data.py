@@ -6,6 +6,8 @@ from Bio import SeqIO
 from abc import ABCMeta, abstractmethod
 from settings import *
 from helpers import column_stack
+import seq_help
+import gff_help
 
 class AbstractComputedData(object):
     '''Similar to AbstractData class, AbstractComputedData also implements get_all_data() used by remap().
@@ -71,33 +73,19 @@ class SeqData(AbstractComputedData):
     def __init__(self, forceCompute=False): 
         rawInputName = 'MDB_Homo_sapiens/sequences.fasta'
         featureFileName = 'MDB_Homo_sapiens_seq_characters.tsv'
-        self.proteinGffPath = os.path.join(RAW_INPUT_PATH, 'human_uniprot.gff.tsv')
-        self.gffHeader = ['Uniprot','source','feature','start','end','attr']
-        self.setup_gf()
         super(SeqData, self).__init__(
              rawInputName, featureFileName, forceCompute=forceCompute)
 
 
     def compute_scores(self):
         
-        def is_refseq(fasta_header): 
-            match = re.search(r'(\w+)\|refseq', fasta_header)
-            if match:
-                refseqId = match.group(1)
-            else:
-                refseqId = 'non-refseq'
-            return refseqId
-        
-        record_dict = SeqIO.index(self.rawInputFilePath, "fasta")
-        
-        def score(refseqIndex):
-            pID = is_refseq(refseqIndex)
-            seq = record_dict[refseqIndex].seq
-            
-            startPos, endPos = 0, len(seq)
-            located = self.get_longest_chain(pID)
-            if located:
-                startPos, endPos = located 
+        def score(index, pID):
+            seqObj = seq_help.get_seq(index)
+            seq = seqObj.seq
+            startPos, endPos = 1, len(seq) # assume starting M removed
+            chain = self.get_longest_chain(pID) 
+            if chain:
+                startPos, endPos = chain
 
             nEndAA = seq[startPos]
             numLysine = seq.count('K')
@@ -119,10 +107,7 @@ class SeqData(AbstractComputedData):
             [(aa, int) for aa in self.AA]
         )
 
-        get_seq_id = np.vectorize(is_refseq)
-        seqIndexes = np.array(record_dict.keys())
-        refseqIndexes = seqIndexes[get_seq_id(seqIndexes) != 'non-refseq']
-        allScores = [score(rIndex) for rIndex in refseqIndexes]
+        allScores = [score(index, pid) for index,pid  in seq_help.get_all_prot()]  # the index is used to retrive the entry from the fasta file
         allScores = np.array(allScores,dtype=dtype)
 #        import pdb; pdb.set_trace() 
 
@@ -130,7 +115,8 @@ class SeqData(AbstractComputedData):
 
     
     def get_longest_chain(self, protId):
-        protGf = self.get_protein_gf(protId)
+        '''get information about the longest Chain of the mature protein'''
+        protGf = gff_help.get_gf(protId)
         isChain = protGf['feature']=='Chain'
         protGf = protGf[isChain]
         if len(protGf) > 0:
@@ -145,28 +131,6 @@ class SeqData(AbstractComputedData):
             return start, end
         else:
             return None
-
-
-    def setup_gf(self):
-        gff = np.genfromtxt(self.proteinGffPath, dtype=None, 
-                      usecols=[0,1,2,3,4,8],
-                      missing='.', delimiter='\t',
-                      names=self.gffHeader)
-        locate = {}
-        for i,entry in enumerate(gff):
-            pid = entry[0]
-            if not locate.get(pid):
-                locate[pid] = []
-            locate[pid].append(i)
-
-        self.gff = gff
-        self.gff_locate = locate
-        return gff, locate
-
-    
-    def get_protein_gf(self, protId):
-        indices = self.gff_locate.get(protId, [])
-        return self.gff[indices]
             
 
     
@@ -317,7 +281,7 @@ class UbqSitesData(AbstractComputedData):
 
         
 if __name__ == '__main__':
-#    SeqData(forceCompute=True)
-    UbqSitesData(forceCompute=True)
-    DisorderData(forceCompute=True)
+    SeqData(forceCompute=True)
+#    UbqSitesData(forceCompute=True)
+#    DisorderData(forceCompute=True)
 
