@@ -41,4 +41,23 @@ def get_gf(protId):
     return gff[indices]
 
 
+
+def get_longest_chain(protId):
+    '''get information about the longest Chain of the mature protein'''
+    protGf = get_gf(protId)
+    isChain = protGf['feature']=='Chain'
+    protGf = protGf[isChain]
+    if len(protGf) > 0:
+        chainLengths = protGf['end'] - protGf['start']
+        indexLongest = np.argmax(chainLengths)
+        start, end = protGf[['start', 'end']][indexLongest]
+
+        # change 1-indexed position to 0-indexed position
+        # AND change closed range [start, end] to open range [start, end)
+        # so they follow programming conventions
+        start, end = start-1, end
+        return start, end
+    else:
+        return None
+
 # import pdb; pdb.set_trace() 

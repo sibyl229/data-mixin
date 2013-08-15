@@ -83,7 +83,7 @@ class SeqData(AbstractComputedData):
             seqObj = seq_help.get_seq(index)
             seq = seqObj.seq
             startPos, endPos = 1, len(seq) # assume starting M removed
-            chain = self.get_longest_chain(pID) 
+            chain = seq_help.get_longest_chain(pID) 
             if chain:
                 startPos, endPos = chain
 
@@ -107,32 +107,11 @@ class SeqData(AbstractComputedData):
             [(aa, int) for aa in self.AA]
         )
 
-        allScores = [score(index, pid) for index,pid  in seq_help.get_all_prot()]  # the index is used to retrive the entry from the fasta file
+        allScores = [score(index, pid) for index,pid  in gff_help.get_all_prot()]  # the index is used to retrive the entry from the fasta file
         allScores = np.array(allScores,dtype=dtype)
 #        import pdb; pdb.set_trace() 
 
-        return allScores
-
-    
-    def get_longest_chain(self, protId):
-        '''get information about the longest Chain of the mature protein'''
-        protGf = gff_help.get_gf(protId)
-        isChain = protGf['feature']=='Chain'
-        protGf = protGf[isChain]
-        if len(protGf) > 0:
-            chainLengths = protGf['end'] - protGf['start']
-            indexLongest = np.argmax(chainLengths)
-            start, end = protGf[['start', 'end']][indexLongest]
-
-            # change 1-indexed position to 0-indexed position
-            # AND change closed range [start, end] to open range [start, end)
-            # so they follow programming conventions
-            start, end = start-1, end
-            return start, end
-        else:
-            return None
-            
-
+        return allScore
     
     def score_n_end(self, nEndAA):
         c = self.AA_NUM_CODE.get(nEndAA,None)
