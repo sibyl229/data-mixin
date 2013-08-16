@@ -5,6 +5,7 @@ import scipy as sp
 import matplotlib.pyplot as plt
 from sklearn.linear_model import Ridge
 from helpers import column_stack
+import go_helper
 from settings import *
 #from DataRemap import remap
 
@@ -55,6 +56,13 @@ for (dirpath, dirnames, filenames) in os.walk(FEATURE_FILE_PATH):
 #
 pIDs = pIDs[allHasValue]
 featuresStacked = featuresStacked[allHasValue]
+
+#
+# keep only cytoplasmic proteins
+#
+cytoplasmic = go_helper.is_cytoplasmic(pIDs['Uniprot'])
+pIDs = pIDs[cytoplasmic]
+featuresStacked = featuresStacked[cytoplasmic]
 
 #
 # backup the combined feature into single file
@@ -142,4 +150,5 @@ def plotFeatureAgainstHL(featureNames, numPerRow=2):
     # sbpl.set_ylim(0,60)
     plt.show()
 
-plotFeatureAgainstHL(otherColNames, numPerRow=5)
+if __name__ == '__main__':
+    plotFeatureAgainstHL(otherColNames, numPerRow=5)
