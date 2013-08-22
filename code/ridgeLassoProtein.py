@@ -22,7 +22,7 @@ else:
 	INPUT = sys.argv[1]
 
 # remove N-end rule cols
-if int(sys.argv[2]) == 1:
+if len(sys.argv) > 3 and int(sys.argv[3]) == 1:
 	X = np.loadtxt(INPUT, skiprows=1, usecols=set(range(8)+range(28,34)) )
 	G = np.genfromtxt(INPUT,usecols=set(range(8)+range(28,34)), names=True)
 	thetaLabels = [head for head in G.dtype.names]
@@ -31,6 +31,7 @@ else:
 	G = np.genfromtxt(INPUT, names=True)
 	thetaLabels = [head for head in G.dtype.names]
 
+thetaLabels = thetaLabels[1:]
 np.random.shuffle(X)	# randomize data before splitting y and X
 y = X[:,0] 	# response vector
 X = X[:,1:]	# attributes: lcavol	lweight	age	lbph	svi	lcp	gleason	pgg45	lpsa
@@ -75,14 +76,16 @@ if (1):
 	plt.title('Ridge Regression Benchmark')
 	plt.xlabel(r'$\delta^{2}$')
 	plt.ylabel(r'$\theta$')
-	#thetaLabels=['totalDisorderAA','totalDisorderRatio','ntermDisorder','internaDisorderCnt', 'f5', 'f6','f7','f8']
 	plt.legend(thetaLabels, loc="center left")
 	#ax.yaxis.label.set_size(40)
 	#ax.xaxis.label.set_size(40)
+	# colours http://stackoverflow.com/questions/8931268/using-colormaps-to-set-color-of-line-in-matplotlib
+	#jet = cm = plt.get_cmap('jet') 
+	#cNorm  = colors.Normalize(vmin=0, vmax=d2BenchMark)
+	#scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
 	plt.savefig("ridgeThetaVsD2.png")
 	#plt.show()
 
-d2Vals = [pow(10,myExp/10) for myExp in xrange(-20,40)]
 def relErr(yhat,y):
 	diff = yhat - y
 	relErr = np.dot(diff.T,diff)/np.dot(y.T,y)
@@ -112,7 +115,7 @@ def cv(d2Vals=[pow(10,myExp/10) for myExp in xrange(-20,40)],errFunc=relErr,trai
 		diff = ytest - test_yhat
 		testErrList.append(testErr)
 		trainErrList.append(trainErr)
-	return testErrList, trainErrList
+	return trainErrList, testErrList
 
 # question 1.2
 trainErrList, testErrList = cv(d2Vals, relErr,ridge)
@@ -146,7 +149,7 @@ if (1):
 	plt.title('Model Performance: Ridge')
 	plt.xlabel(r'$\delta^{2}$')
 	plt.ylabel(r'$PearsonCC$')
-	plt.legend(['train','test'])
+	plt.legend(['train','test'], loc="lower right")
 	plt.savefig("rVsD2Ridge.png")
 	#plt.show()
 
@@ -213,16 +216,19 @@ if (1):
 	ax = fig.add_subplot(1,1,1)
 	ax.set_xscale('log')
 	plt.plot(d2Vals,plotData)
-	plt.title('Model Performance: Lasso ')
+	plt.title('Model Performance: Lasso')
 	plt.xlabel(r'$\delta^{2}$')
 	plt.ylabel(r'$PearsonCC$')
-	plt.legend(['train','test'])
+	plt.legend(['train','test'], loc="lower right")
 	plt.savefig("rVsD2Lasso.png")
 	#plt.show()
 if(1): 
 	# choose d2 parameter, print out thetas for this parameter
 	# choose theta
-	d2 = float(sys.argv[3]) ; theta = ridge(Xtrain,ytrain,d2)
+	if len(sys.argv) >= 3:
+		d2 = float(sys.argv[2]) 
+	else: d2 = 0
+	theta = ridge(Xtrain,ytrain,d2)
 	test_yhat = yhat(Xtest, theta)					# nx1 of predicted values for test set
 	train_yhat = yhat(Xtrain*Xstd + Xbar, theta)			# have to get mean normalized Xtrain back to original format
 	ytrain = ytrain + ybar
