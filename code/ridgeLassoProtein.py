@@ -1,6 +1,6 @@
 from __future__ import division
 import numpy as np
-from scipy import eye
+from scipy import eye, stats
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from math import log, pow
@@ -24,8 +24,12 @@ else:
 # remove N-end rule cols
 if int(sys.argv[2]) == 1:
 	X = np.loadtxt(INPUT, skiprows=1, usecols=set(range(8)+range(28,34)) )
+	G = np.genfromtxt(INPUT,usecols=set(range(8)+range(28,34)), names=True)
+	thetaLabels = [head for head in G.dtype.names]
 else:
 	X = np.loadtxt(INPUT, skiprows=1)
+	G = np.genfromtxt(INPUT, names=True)
+	thetaLabels = [head for head in G.dtype.names]
 
 np.random.shuffle(X)	# randomize data before splitting y and X
 y = X[:,0] 	# response vector
@@ -59,10 +63,7 @@ def ridge(X,y,d2=0):
 d2Vals = [pow(10,myExp/10) for myExp in xrange(-20,40)]
 
 # use labels for plot
-if len(sys.argv) > 3:
-	thetaLabels = sys.argv[2]
-else:
-	thetaLabels = ['f'+str(x+1) for x in range(numFeat)]
+# thetaLabels = ['f'+str(x+1) for x in range(numFeat)]
 
 # question 1.1
 if (1):
@@ -81,38 +82,40 @@ if (1):
 	plt.savefig("ridgeThetaVsD2.png")
 	#plt.show()
 
-# question 1.2
 d2Vals = [pow(10,myExp/10) for myExp in xrange(-20,40)]
-if(1):	
-	def relErr(yhat,y):
-		diff = yhat - y
-		relErr = np.dot(diff.T,diff)/np.dot(y.T,y)
-		return relErr
-	
-	def yhat(Xstar):		# Xstar should NOT be mean normalized, when use with train we need to undo mean normalization and get it back to original data values
-		yhat = ybar + np.dot((Xstar - Xbar) / Xstd, theta)
-		return yhat
+def relErr(yhat,y):
+	diff = yhat - y
+	relErr = np.dot(diff.T,diff)/np.dot(y.T,y)
+	return relErr
+
+def pearsonR(yhat,y):
+	r = stats.pearsonr(yhat,y)[0]
+	return r 
+
+def yhat(Xstar, theta):		# Xstar should NOT be mean normalized, when use with train we need to undo mean normalization and get it back to original data values
+	yhat = ybar + np.dot((Xstar - Xbar) / Xstd, theta)
+	return yhat
+
+def cv(d2Vals=[pow(10,myExp/10) for myExp in xrange(-20,40)],errFunc=relErr,trainMeth=ridge):	
 		
 	# compute relative error for test and train set: (y,x*) from these data sets
 	testErrList = []
 	trainErrList = []
 	for d2 in d2Vals:
-		theta = ridge(Xtrain,ytrain,d2)				# theta values always gotten the same way
-
-		test_yhat = yhat(Xtest)					# nx1 of predicted values for test set
-		train_yhat = yhat(Xtrain*Xstd + Xbar)			# have to get mean normalized Xtrain back to original format
-		
-		testErr = relErr(test_yhat,ytest)			# compare to actual y values in test set and compute error
-		trainErr = relErr(train_yhat,ytrain + ybar)		# have to add back average that was previously subtracted off
+		theta = trainMeth(Xtrain,ytrain,d2)				# theta values always gotten the same way
+		test_yhat = yhat(Xtest, theta)					# nx1 of predicted values for test set
+		train_yhat = yhat(Xtrain*Xstd + Xbar, theta)			# have to get mean normalized Xtrain back to original format
+	
+		testErr = errFunc(test_yhat,ytest)			# compare to actual y values in test set and compute error
+		trainErr = errFunc(train_yhat,ytrain + ybar)		# have to add back average that was previously subtracted off
 		k=5
 		diff = ytest - test_yhat
-		#print ytest[:k]
-		#print test_yhat[:k]
-		#print diff[:k],np.dot(diff.T,diff)
-		#print np.dot(ytest,ytest), np.dot(diff.T,diff)/np.dot(ytest,ytest)
 		testErrList.append(testErr)
 		trainErrList.append(trainErr)
+	return testErrList, trainErrList
 
+# question 1.2
+trainErrList, testErrList = cv(d2Vals, relErr,ridge)
 if (1):
 	# plot test and train error
 	plotData=np.zeros(shape=(len(testErrList),2))
@@ -125,10 +128,26 @@ if (1):
 	plt.title('Model Performance: Ridge')
 	plt.xlabel(r'$\delta^{2}$')
 	plt.ylabel(r'$\frac{\|\| y - X\theta \|\|_2^2}{\|\|y\|\|_2^2}$')
-	#ax.yaxis.label.set_size(40)
-	#ax.xaxis.label.set_size(40)
 	plt.legend(['train','test'])
 	plt.savefig("errVsD2Ridge.png")
+	#plt.show()
+
+# pearsonR
+trainErrList, testErrList = cv(d2Vals, pearsonR,ridge)
+if (1):
+	# plot test and train error
+	plotData=np.zeros(shape=(len(testErrList),2))
+	plotData[:,0] = trainErrList
+	plotData[:,1] = testErrList
+	fig = plt.figure()
+	ax = fig.add_subplot(1,1,1)
+	ax.set_xscale('log')
+	plt.plot(d2Vals,plotData)
+	plt.title('Model Performance: Ridge')
+	plt.xlabel(r'$\delta^{2}$')
+	plt.ylabel(r'$PearsonCC$')
+	plt.legend(['train','test'])
+	plt.savefig("rVsD2Ridge.png")
 	#plt.show()
 
 # question 1.3
@@ -159,45 +178,14 @@ if (1):
 	ax.set_xscale('log')
 	plt.plot(d2Vals,plotData)
 	plt.title('Regularization Benchmark for Lasso')
-	#thetaLabels=['totalDisorderAA','totalDisorderRatio','ntermDisorder','internaDisorderCnt', 'f5', 'f6','f7','f8']
 	plt.legend(thetaLabels, loc="center left")
 	plt.xlabel(r'$\delta^{2}$')
 	plt.ylabel(r'$\theta$')
-	#ax.yaxis.label.set_size(40)
-	#ax.xaxis.label.set_size(40)
 	plt.savefig("lassoThetaVsD2.png")
 	#plt.show()
 
-if(1):	
-	def relErr(yhat,y):
-		diff = yhat - y
-		relErr = np.dot(diff.T,diff)/np.dot(y.T,y)
-		return relErr
-	
-	def yhat(Xstar):
-		yhat = ybar + np.dot((Xstar - Xbar) / Xstd, theta)
-		return yhat
-		
-	# compute relative error for test and train set: (y,x*) from these data sets
-	testErrList = []
-	trainErrList = []
-	for d2 in d2Vals:
-		theta = lasso(Xtrain,ytrain,d2)				# theta values always gotten the same way
 
-		test_yhat = yhat(Xtest)					# nx1 of predicted values for test set
-		train_yhat = yhat(Xtrain*Xstd + Xbar)			# have to get mean normalized Xtrain back to original format
-		
-		testErr = relErr(test_yhat,ytest)			# compare to actual y values in test set and compute error
-		trainErr = relErr(train_yhat,ytrain + ybar)		# have to add back average that was previously subtracted off
-		k=5
-		diff = ytest - test_yhat
-		#print ytest[:k]
-		#print test_yhat[:k]
-		#print diff[:k],np.dot(diff.T,diff)
-		#print np.dot(ytest,ytest), np.dot(diff.T,diff)/np.dot(ytest,ytest)
-		testErrList.append(testErr)
-		trainErrList.append(trainErr)
-
+trainErrList, testErrList = cv(d2Vals, relErr,lasso)
 if (1):
 	# plot test and train error
 	plotData=np.zeros(shape=(len(testErrList),2))
@@ -210,18 +198,33 @@ if (1):
 	plt.title('Model Performance: Lasso ')
 	plt.xlabel(r'$\delta^{2}$')
 	plt.ylabel(r'$\frac{\|\| y - X\theta \|\|_2^2}{\|\|y\|\|_2^2}$')
-	#ax.yaxis.label.set_size(40)
-	#ax.xaxis.label.set_size(40)
 	plt.legend(['train','test'])
 	plt.savefig("errVsD2Lasso.png")
 	#plt.show()
 
+# pearsonR
+trainErrList, testErrList = cv(d2Vals, pearsonR,lasso)
+if (1):
+	# plot test and train error
+	plotData=np.zeros(shape=(len(testErrList),2))
+	plotData[:,0] = trainErrList
+	plotData[:,1] = testErrList
+	fig = plt.figure()
+	ax = fig.add_subplot(1,1,1)
+	ax.set_xscale('log')
+	plt.plot(d2Vals,plotData)
+	plt.title('Model Performance: Lasso ')
+	plt.xlabel(r'$\delta^{2}$')
+	plt.ylabel(r'$PearsonCC$')
+	plt.legend(['train','test'])
+	plt.savefig("rVsD2Lasso.png")
+	#plt.show()
 if(1): 
 	# choose d2 parameter, print out thetas for this parameter
 	# choose theta
-	theta = ridge(Xtrain,ytrain,100)
-	test_yhat = yhat(Xtest)					# nx1 of predicted values for test set
-	train_yhat = yhat(Xtrain*Xstd + Xbar)			# have to get mean normalized Xtrain back to original format
+	d2 = float(sys.argv[3]) ; theta = ridge(Xtrain,ytrain,d2)
+	test_yhat = yhat(Xtest, theta)					# nx1 of predicted values for test set
+	train_yhat = yhat(Xtrain*Xstd + Xbar, theta)			# have to get mean normalized Xtrain back to original format
 	ytrain = ytrain + ybar
 	for i,e, in enumerate(theta):
 		if e != 0: print "#", thetaLabels[i], e
@@ -233,3 +236,11 @@ if(1):
 # svi 0.0669587916124
 # gleason 0.0545111618812
 #pdb.set_trace()
+fig = plt.figure()
+ax = plt.plot(ytrain,train_yhat,'x')
+ax = plt.plot(ytest,test_yhat,'o')
+plt.xlabel(r'$y$')
+plt.ylabel(r'$yhat$')
+plt.title('Model Predictions: Ridge for d2='+ str(d2))
+plt.legend(['x: train','o: test'])
+plt.savefig("predRidge.png")
