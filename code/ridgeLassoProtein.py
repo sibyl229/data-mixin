@@ -6,6 +6,7 @@ from matplotlib import rc
 from math import log, pow
 import pylab
 import pdb
+#pdb.set_trace()
 import argparse
 import sys
 import argparse
@@ -20,7 +21,12 @@ if len(sys.argv) == 1:
 else: 
 	INPUT = sys.argv[1]
 
-X = np.loadtxt(INPUT, skiprows=1)
+# remove N-end rule cols
+if int(sys.argv[2]) == 1:
+	X = np.loadtxt(INPUT, skiprows=1, usecols=set(range(8)+range(28,34)) )
+else:
+	X = np.loadtxt(INPUT, skiprows=1)
+
 np.random.shuffle(X)	# randomize data before splitting y and X
 y = X[:,0] 	# response vector
 X = X[:,1:]	# attributes: lcavol	lweight	age	lbph	svi	lcp	gleason	pgg45	lpsa
@@ -44,7 +50,6 @@ Xtrain = (Xtrain - Xbar) / Xstd
 # calculate the solution to ridge: theta = (Xt*X + delta^2*I)^-1*Xt*y
 # default value of delta is zero, least squares estimate
 
-#pdb.set_trace()
 
 def ridge(X,y,d2=0):
 	ridgeInv = np.linalg.inv(np.dot(X.T,X) + d2*eye(numFeat))
@@ -54,7 +59,7 @@ def ridge(X,y,d2=0):
 d2Vals = [pow(10,myExp/10) for myExp in xrange(-20,40)]
 
 # use labels for plot
-if len(sys.argv) > 2:
+if len(sys.argv) > 3:
 	thetaLabels = sys.argv[2]
 else:
 	thetaLabels = ['f'+str(x+1) for x in range(numFeat)]
@@ -70,7 +75,7 @@ if (1):
 	plt.xlabel(r'$\delta^{2}$')
 	plt.ylabel(r'$\theta$')
 	#thetaLabels=['totalDisorderAA','totalDisorderRatio','ntermDisorder','internaDisorderCnt', 'f5', 'f6','f7','f8']
-	plt.legend(thetaLabels, loc="lower right")
+	plt.legend(thetaLabels, loc="center left")
 	#ax.yaxis.label.set_size(40)
 	#ax.xaxis.label.set_size(40)
 	plt.savefig("ridgeThetaVsD2.png")
@@ -155,7 +160,7 @@ if (1):
 	plt.plot(d2Vals,plotData)
 	plt.title('Regularization Benchmark for Lasso')
 	#thetaLabels=['totalDisorderAA','totalDisorderRatio','ntermDisorder','internaDisorderCnt', 'f5', 'f6','f7','f8']
-	plt.legend(thetaLabels, loc="lower right")
+	plt.legend(thetaLabels, loc="center left")
 	plt.xlabel(r'$\delta^{2}$')
 	plt.ylabel(r'$\theta$')
 	#ax.yaxis.label.set_size(40)
@@ -214,7 +219,10 @@ if (1):
 if(1): 
 	# choose d2 parameter, print out thetas for this parameter
 	# choose theta
-	theta = lasso(Xtrain,ytrain,8)
+	theta = ridge(Xtrain,ytrain,100)
+	test_yhat = yhat(Xtest)					# nx1 of predicted values for test set
+	train_yhat = yhat(Xtrain*Xstd + Xbar)			# have to get mean normalized Xtrain back to original format
+	ytrain = ytrain + ybar
 	for i,e, in enumerate(theta):
 		if e != 0: print "#", thetaLabels[i], e
 # OUTPUT
@@ -224,6 +232,4 @@ if(1):
 # lbph 0.067353621695
 # svi 0.0669587916124
 # gleason 0.0545111618812
-
-
-	
+#pdb.set_trace()
