@@ -24,13 +24,19 @@ pip install package_name
 - run linear.py to combine and normalize feature scores for the selected proteins, and run learning algorithm
 -- output: input/combined_features.tsv
 -- output: input/normalized_features.tsv
-- run code/ridgeLassoProtein.py to study affect of features and to cross validate regularizer coefficient
-- run from bash: $ python code/ridgeLassoProtein.py input/normalized_features.tsv # can be run from any directory, as long as path to normalized_features.tsv is specified. Prints graphs to ./
+- run ridgeLassoProtein.py to study affect of features and to cross validate regularizer coefficient
+-- run from bash: $ python code/ridgeLassoProtein.py input/normalized_features.tsv # can be run from any directory, as long as path to normalized_features.tsv is specified. Prints graphs to ./
 -- output:
 	./errVsD2Lasso.png
 	./errVsD2Ridge.png
 	./lassoThetaVsD2.png
 	./ridgeThetaVsD2.png
+- run featCorr.py to see the correlation in a data set
+-- run from bash: $ python python code/featCorr.py input/normalized_features.tsv
+-- output: 
+	# STDOUT of feature correlation with halflife_t12_in_h
+	./featCorrR.png
+	./featCorrP.png
 
 ** Purpose of each files and directories (refer to those python modules for more detailed documentations)
 input/	      	   	 preprocessed data (eg. combined_features.tsv contains all feature scores for a select list of proteins)
@@ -41,6 +47,7 @@ data.py			 Deal with reading various types of feature files, used by DataRemap.p
 compute_data.py		 Deal with computing various features from raw data, used by DataRemap.py to access the data
 linear.py		 Combine various standardized features for learning, normalize the features, and try applying some learning algorithms		 
 code/ridgeLassoProtein.py	Run L1, L2, regularizer. Make graphs for feature coefficients and error.
+code/featCorr.py		Examine the correlation of the features
 
 ** How to add new features
 - put feature data in raw_inputs/ directory

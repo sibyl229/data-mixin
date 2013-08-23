@@ -6,13 +6,12 @@ from matplotlib import rc
 from math import log, pow
 import pylab
 import pdb
-#pdb.set_trace()
 import argparse
 import sys
 import argparse
+from numpy.random import rand
 
 #parser = argparse.ArgumentParser(description='Command line options')
-
 
 
 # read in data from default file or command line
@@ -22,7 +21,7 @@ else:
 	INPUT = sys.argv[1]
 
 # remove N-end rule cols
-if len(sys.argv) > 3 and int(sys.argv[3]) == 1:
+if len(sys.argv) > 4 and int(sys.argv[4]) == 1:
 	X = np.loadtxt(INPUT, skiprows=1, usecols=set(range(8)+range(28,34)) )
 	G = np.genfromtxt(INPUT,usecols=set(range(8)+range(28,34)), names=True)
 	thetaLabels = [head for head in G.dtype.names]
@@ -30,9 +29,12 @@ else:
 	X = np.loadtxt(INPUT, skiprows=1)
 	G = np.genfromtxt(INPUT, names=True)
 	thetaLabels = [head for head in G.dtype.names]
-
 thetaLabels = thetaLabels[1:]
+
 np.random.shuffle(X)	# randomize data before splitting y and X
+#X[:,1] = X[:,1] + rand(np.shape(X)[0])
+
+
 y = X[:,0] 	# response vector
 X = X[:,1:]	# attributes: lcavol	lweight	age	lbph	svi	lcp	gleason	pgg45	lpsa
 numFeat = np.shape(X)[1]
@@ -41,6 +43,12 @@ split = 0.5				# train size 50%, test size 50%
 spRow = int(np.size(y)*split)
 ytrain, ytest = y[0:spRow], y[spRow:] 	
 Xtrain, Xtest = X[0:spRow], X[spRow:]
+
+# input num instances for reducing data set
+if len(sys.argv) > 3: 
+	numInst = int(np.shape(Xtrain)[0]*float(sys.argv[3]))
+	Xtrain = Xtrain[:numInst,:]
+	ytrain = ytrain[:numInst]
 
 # compute standar score
 # keep means and std of each attribute of X separately
@@ -66,6 +74,7 @@ d2Vals = [pow(10,myExp/10) for myExp in xrange(-20,40)]
 # use labels for plot
 # thetaLabels = ['f'+str(x+1) for x in range(numFeat)]
 
+#pdb.set_trace()
 # question 1.1
 if (1):
 	d2BenchMark = [ridge(Xtrain,ytrain,d2) for d2 in d2Vals]
@@ -225,10 +234,10 @@ if (1):
 if(1): 
 	# choose d2 parameter, print out thetas for this parameter
 	# choose theta
-	if len(sys.argv) >= 3:
+	if len(sys.argv) > 3:
 		d2 = float(sys.argv[2]) 
 	else: d2 = 0
-	theta = ridge(Xtrain,ytrain,d2)
+	theta = lasso(Xtrain,ytrain,d2)
 	test_yhat = yhat(Xtest, theta)					# nx1 of predicted values for test set
 	train_yhat = yhat(Xtrain*Xstd + Xbar, theta)			# have to get mean normalized Xtrain back to original format
 	ytrain = ytrain + ybar
@@ -242,11 +251,19 @@ if(1):
 # svi 0.0669587916124
 # gleason 0.0545111618812
 #pdb.set_trace()
+
+
+def acc(y,yhat):
+	acc = np.sum(np.abs(y-yhat)) / np.size(y)
+	return acc
+print '#', 'trainSize', 'testSize', 'trainAcc', 'testAcc'
+print '#', np.size(ytrain), np.size(ytest), pearsonR(ytrain,train_yhat), pearsonR(ytest,test_yhat)
+
 fig = plt.figure()
 ax = plt.plot(ytrain,train_yhat,'x')
 ax = plt.plot(ytest,test_yhat,'o')
 plt.xlabel(r'$y$')
 plt.ylabel(r'$yhat$')
-plt.title('Model Predictions: Ridge for d2='+ str(d2))
+plt.title('Model Predictions: Lasso for d2='+ str(d2))
 plt.legend(['x: train','o: test'])
 plt.savefig("predRidge.png")
