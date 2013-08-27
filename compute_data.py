@@ -135,7 +135,7 @@ class DisorderData(AbstractComputedData):
                 terminal = aaDisorder[-numAA:]
             else:
                 terminal = aaDisorder[:numAA]
-            numDisorder = np.sum(aaDisorder)
+            numDisorder = np.sum(terminal)
             return numDisorder / numAA
 
         def internal_disorder(aaDisorder, numAA):
@@ -304,8 +304,8 @@ class MetSitesData(AbstractSitesData):
 
         
 if __name__ == '__main__':
-#    SeqData(forceCompute=True)
     DisorderData(forceCompute=True)
+    SeqData(forceCompute=True)
     UbqSitesData(forceCompute=True)
     MetSitesData(forceCompute=True)
     AcetSitesData(forceCompute=True)
