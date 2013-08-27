@@ -117,7 +117,7 @@ numPerRow = 2
 
 def plotFeatureAgainstHL(featureNames, numPerRow=2):
     numRows = int(np.ceil(len(featureNames) / numPerRow))
-    f, subplots = plt.subplots(numRows, numPerRow, sharex=True, sharey=True)
+    fig, subplots = plt.subplots(numRows, numPerRow, sharex=True, sharey=True)
     #subplots = [ax1, ax2, ax3, ax4]
     for (j, featName) in enumerate(featureNames):
         sbpl = subplots[int(j/numPerRow)][ j % numPerRow]
@@ -143,12 +143,23 @@ def plotFeatureAgainstHL(featureNames, numPerRow=2):
                     interpolation="nearest", aspect='auto', extent=extent)
         sbpl.grid(True)
         sbpl.set_title(featName)
-        sbpl.set_xlabel('Half-life in hours')
-        sbpl.set_ylabel('Normalized feature score')
+        #sbpl.set_xlabel('Half-life in hours')
+        sbpl.set_ylabel('Norm. Score')#('Normalized feature score')
 
     # sbpl.set_xlim(-1,1)
     # sbpl.set_ylim(0,60)
-    plt.show()
+#    plt.show()
+    return fig
 
+from matplotlib.backends.backend_pdf import PdfPages
 if __name__ == '__main__':
-    plotFeatureAgainstHL(otherColNames, numPerRow=5)
+    perSheet = 16
+    numPerRow = 4
+    pp = PdfPages('plot_features.pdf')
+    for i in range(0, len(otherColNames), perSheet):
+        cns = otherColNames[i : i+perSheet]
+        fig = plotFeatureAgainstHL(cns, numPerRow=numPerRow)
+        #import code; code.interact(local=locals())
+        fig.savefig(pp, format='pdf')
+    pp.close()
+##    plotFeatureAgainstHL(otherColNames, numPerRow=4)
