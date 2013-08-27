@@ -83,7 +83,7 @@ class SeqData(AbstractComputedData):
             seqObj = seq_help.get_seq(index)
             seq = seqObj.seq
             startPos, endPos = 1, len(seq) # assume starting M removed
-            chain = seq_help.get_longest_chain(pID) 
+            chain = gff_help.get_longest_chain(pID) 
             if chain:
                 startPos, endPos = chain
 
@@ -104,10 +104,10 @@ class SeqData(AbstractComputedData):
             [(aa, int) for aa in self.AA]
         )
 
-        allScores = [score(index, pid) for index,pid  in gff_help.get_all_prot()]  # the index is used to retrive the entry from the fasta file
+        allScores = [score(index, pid) for index,pid  in seq_help.get_all_prot()]  # the index is used to retrive the entry from the fasta file
         allScores = np.array(allScores,dtype=dtype)
 
-        return allScore
+        return allScores
     
     def score_n_end(self, nEndAA):
         c = self.AA_NUM_CODE.get(nEndAA,None)
@@ -129,29 +129,48 @@ class DisorderData(AbstractComputedData):
 
     def compute_scores(self):
 
+        def term_disorder(aaDisorder, numAA, whichTerm):
+            '''terminal disorder of this number of nterminal a.a.'''
+            if whichTerm == 'C':
+                terminal = aaDisorder[-numAA:]
+            else:
+                terminal = aaDisorder[:numAA]
+            numDisorder = np.sum(aaDisorder)
+            return numDisorder / numAA
+
+        def internal_disorder(aaDisorder, numAA):
+            internalDisorderRegions = re.findall(r'1+',aaDisorder[40:])
+            internaDisorderCnt = len([disOR for disOR in internalDisorderRegions if len(disOR)>numAA])
+            return internaDisorderCnt
+
+        varying_lengths = [30, 40, 50, 60, 70] 
         def score(record):
             aaDisorder = self.parse_disorder_consensus(record.seq) # e.g [1,1,1,0,...1,1], where 1 means disordered
             aaDisorderStr = ''.join(aaDisorder.astype(int).astype(str)) # e.g '1110...11'
             totalDisorderAA = np.sum(aaDisorder)
             totalDisorderRatio = totalDisorderAA / len(record.seq)
-            ntermDisorder = np.sum(aaDisorder[:40])/40
-            internalDisorderRegions = re.findall(r'1+',aaDisorderStr[40:])
+
           #  import pdb; pdb.set_trace()
-            internaDisorderCnt = len([disOR for disOR in internalDisorderRegions if len(disOR)>50])
+            
+            ctd = [term_disorder(aaDisorder, l, 'C') for l in varying_lengths]
+            ntd = [term_disorder(aaDisorder, l, 'N') for l in varying_lengths]
+            intnld = [internal_disorder(aaDisorderStr, l) for l in varying_lengths]
 
             return (record.id, 
                     totalDisorderAA,
                     totalDisorderRatio,
-                    ntermDisorder,
-                    internaDisorderCnt
-                )
+                   ) + tuple(ntd) \
+                   + tuple(ctd) \
+                   + tuple(intnld)
+
 
         dtype=[('Uniprot', '|S20'),
                ('totalDisorderAA', int),
                ('totalDisorderRatio', float),
-               ('ntermDisorder', float),
-               ('internaDisorderCnt', int),
-        ]
+        ] + [('ntermDisorder'+str(l), float) for l in varying_lengths] \
+        + [('ctermDisorder'+str(l), float) for l in varying_lengths] \
+        + [('internaDisorderCnt'+str(l), float) for l in varying_lengths]
+
 
         with open(self.rawInputFilePath, "rU") as handle:
 #            import pdb; pdb.set_trace()
@@ -167,17 +186,21 @@ class DisorderData(AbstractComputedData):
         return aaDisorder >= 5
 
 
+
 class AbstractSitesData(AbstractComputedData):
 
     def setup(self):
         # not sure why genfromtxt refuses to use the first line as
         # header, when names=True, so doing this manually
         with open(self.rawInputFilePath,'r') as f:
+            for x in range(3):
+                f.readline()
             header = f.readline()
             header = header.rstrip().split('\t')
         self.sitesData = \
             np.genfromtxt(self.rawInputFilePath, 
-                          dtype=None, 
+                          dtype=None,
+                          skip_header=3,
                           names=header,
                           delimiter='\t',
                         )
@@ -281,7 +304,7 @@ class MetSitesData(AbstractSitesData):
 
         
 if __name__ == '__main__':
-    SeqData(forceCompute=True)
+#    SeqData(forceCompute=True)
     DisorderData(forceCompute=True)
     UbqSitesData(forceCompute=True)
     MetSitesData(forceCompute=True)
