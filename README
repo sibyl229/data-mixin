@@ -15,10 +15,28 @@ pip install package_name
 ** How to use it
 - Get a copy of the raw_inputs/ directory and place it in the project root directory
 - create a directory called input/ at the project root, which contain a subdirectory called features (eg. mkdir -p input/features)
-- run compute_data.py to generate feature score files
+- run compute_data.py to generate feature score files 
+-- output: raw_inputs/MDB_Homo_sapiens_disorder_consensus.csv ...
 - run DataRemap.py to take features scores for a selected list of proteins
+-- output: 	input/features/featureFrom_MDB_Homo_sapiens_disorder_consensus.csv
+		input/features/featureFrom_pr101183k_si_002_HeLa.csv
+		input/target_proteins.txt
 - run linear.py to combine and normalize feature scores for the selected proteins, and run learning algorithm
-
+-- output: input/combined_features.tsv
+-- output: input/normalized_features.tsv
+- run ridgeLassoProtein.py to study affect of features and to cross validate regularizer coefficient
+-- run from bash: $ python code/ridgeLassoProtein.py input/normalized_features.tsv # can be run from any directory, as long as path to normalized_features.tsv is specified. Prints graphs to ./
+-- output:
+	./errVsD2Lasso.png
+	./errVsD2Ridge.png
+	./lassoThetaVsD2.png
+	./ridgeThetaVsD2.png
+- run featCorr.py to see the correlation in a data set
+-- run from bash: $ python python code/featCorr.py input/normalized_features.tsv
+-- output: 
+	# STDOUT of feature correlation with halflife_t12_in_h
+	./featCorrR.png
+	./featCorrP.png
 
 ** Purpose of each files and directories (refer to those python modules for more detailed documentations)
 input/	      	   	 preprocessed data (eg. combined_features.tsv contains all feature scores for a select list of proteins)
@@ -28,7 +46,8 @@ DataRemap.py		 Standardize feature scores: take the same list of proteins as tem
 data.py			 Deal with reading various types of feature files, used by DataRemap.py to access the data
 compute_data.py		 Deal with computing various features from raw data, used by DataRemap.py to access the data
 linear.py		 Combine various standardized features for learning, normalize the features, and try applying some learning algorithms		 
-
+code/ridgeLassoProtein.py	Run L1, L2, regularizer. Make graphs for feature coefficients and error.
+code/featCorr.py		Examine the correlation of the features
 
 ** How to add new features
 - put feature data in raw_inputs/ directory
