@@ -19,16 +19,18 @@ yHat = ridge.predict(normalizedFeatures)
 print sp.stats.pearsonr(halfLifeArray, yHat)
 
 
-fig, ax = plt.subplots()
+ax = plt.subplot(aspect='equal')
 ax.plot(halfLifeArray, yHat, 'o')
 ax.set_ylim(0,60)
 ax.set_xlim(0,60)
 ax.set_title('Correlation between the real and the predicted')
-#plt.show()
+plt.show()
 
 #import pdb; pdb.set_trace()
 '''
-degr motif
-topfind
-length at N and C end
+degr motif (Ken box)
+number of Lysine
+topfind (true n-end) or just remove M
+take different length at N and C end (
+yaakov levy weizmann
 '''

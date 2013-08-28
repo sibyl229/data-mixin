@@ -22,13 +22,8 @@ def column_stack(*ndArrs):
 
     return newArr
 
-
-
-# def column_remove(arr, *colNames):
-#     '''take a structured np array and return a new copy of the array with 
-#     ALL columns with certain names removed'''
     
-    
+
 
 
 
