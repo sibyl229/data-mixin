@@ -87,5 +87,6 @@ if __name__ == '__main__':
     remap(AcetSitesData())
     remap(MetSitesData())
     remap(PhosphoSitesData())
-
+    remap(DegrMotifData())
+    remap(SecStructData())
 

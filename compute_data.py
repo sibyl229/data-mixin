@@ -5,7 +5,6 @@ import re
 from Bio import SeqIO
 from abc import ABCMeta, abstractmethod
 from settings import *
-from helpers import column_stack
 import seq_help
 import gff_help
 
@@ -42,6 +41,7 @@ Different from AbstractData class, this one is extended by classes that compute 
         return self._protIds, self._dataArray
 
     def compute_and_backup_scores(self):
+        print 'computing feature: ' + self.__class__.__name__ + '...'
         scores = self.compute_scores()
         self.backup_scores(scores, self.featureFilePath)
         return scores
@@ -146,7 +146,7 @@ class DisorderData(AbstractComputedData):
         varying_lengths = [30, 40, 50, 60, 70] 
         def score(record):
             aaDisorder = self.parse_disorder_consensus(record.seq) # e.g [1,1,1,0,...1,1], where 1 means disordered
-            aaDisorderStr = ''.join(aaDisorder.astype(int).astype(str)) # e.g '1110...11'
+            aaDisorderStr = self.to_disorder_str(aaDisorder)
             totalDisorderAA = np.sum(aaDisorder)
             totalDisorderRatio = totalDisorderAA / len(record.seq)
 
@@ -179,12 +179,119 @@ class DisorderData(AbstractComputedData):
 
         return allScores
 
-
-    def parse_disorder_consensus(self, seq):
+    @staticmethod
+    def parse_disorder_consensus(seq):
         # get array of amino acid -wise disorder consensus score
         aaDisorder = np.fromiter(seq, dtype=int, count=len(seq))
         return aaDisorder >= 5
 
+    @staticmethod
+    def to_disorder_str(disorderArray):
+        return \
+            ''.join(disorderArray.astype(int).astype(str)) # e.g '1110...11'
+
+class SecStructData(AbstractComputedData):
+
+    def __init__(self, forceCompute=False): 
+        rawInputName = 'MDB_Homo_sapiens/annotations.fasta'
+        featureFileName = 'MDB_Homo_sapiens_sec_struct.csv'
+        super(SecStructData, self).__init__(
+             rawInputName, featureFileName, forceCompute=forceCompute)
+
+
+    def compute_scores(self):
+
+        def score(record):
+            seq = record.seq
+            fracHelix = self.frac(seq, r'[HGI]')
+            fracSheet = self.frac(seq, r'[BE]')
+            fracBend = self.frac(seq, r'[STL]')
+            fracLoop = self.frac(seq, r'C')
+            return (fracHelix, fracSheet, fracBend, fracLoop)
+
+
+        dtype=[('Uniprot', '|S20'),
+               ('fracHelix', float),
+               ('fracSheet', float),
+               ('fracBend', float),
+               ('fracLoop', float),
+        ]
+
+        fastaPath = self.rawInputFilePath
+        recordDict = SeqIO.index(fastaPath, "fasta")
+        proteinIds = set([])
+        allScores = []
+        for key in recordDict.keys():
+            match = re.search(r'(\w+)\|.*dssp', key)
+            if match:
+                pid = match.group(1)
+                if pid not in proteinIds:
+                    seqRec = recordDict.get(key)
+                    allScores.append((pid,) + score(seqRec))
+                    proteinIds.add(pid)
+        
+        allScores = np.array(allScores, dtype=dtype)
+        return allScores        
+                
+    @staticmethod
+    def frac(seq, regex):
+        marker = 'A'
+        seqNew = re.sub(regex, marker, str(seq))
+        count = seqNew.count(marker)
+        return count / len(seq)
+
+
+class DegrMotifData(DisorderData):
+
+    def __init__(self, forceCompute=False): 
+        rawInputName = 'MDB_Homo_sapiens/disorder_consensus.fasta'
+        featureFileName = 'MDB_Homo_sapiens_degr_motif.csv'
+        AbstractComputedData.__init__(self,
+            rawInputName, featureFileName, forceCompute=forceCompute)
+
+
+    def compute_scores(self):
+
+        def score(disorderSeq, seq):
+            dregions = self.disorder_regions(disorderSeq, seq)
+            KENPattern = r'KEN...N'
+            DPattern = r'R..L....N'
+            kCount = 0
+            dCount = 0
+            for rgn in dregions:
+                kCount += len(re.findall(KENPattern, rgn))
+                dCount += len(re.findall(DPattern, rgn))
+
+            return (kCount, dCount)
+
+
+        dtype=[('Uniprot', '|S20'),
+               ('numKENbox', int),
+               ('numDbox', int),
+        ]
+
+        allScores = []
+        disorderFastaDict = SeqIO.index(self.rawInputFilePath, 'fasta')
+        for key, pid in seq_help.get_all_prot():
+            disorderConsensus = disorderFastaDict.get(pid)
+            if disorderConsensus:
+                seqRec = seq_help.get_seq(key)
+                seq = str(seqRec.seq)
+                allScores.append(
+                    (pid,) + score(disorderConsensus, seq))
+
+        allScores = np.array(allScores,dtype=dtype)
+        return allScores
+
+    @classmethod
+    def disorder_regions(cls, disorderSeq, seq):
+        da = cls.parse_disorder_consensus(disorderSeq)
+        ds = cls.to_disorder_str(da)
+        matches = re.finditer('1+', ds)
+        regions = [seq[m.start(): m.end()] for m in matches]
+        #import pdb; pdb.set_trace()
+        return regions
+        
 
 
 class AbstractSitesData(AbstractComputedData):
@@ -304,6 +411,8 @@ class MetSitesData(AbstractSitesData):
 
         
 if __name__ == '__main__':
+    DegrMotifData(forceCompute=True)
+    SecStructData(forceCompute=True)
     DisorderData(forceCompute=True)
     SeqData(forceCompute=True)
     UbqSitesData(forceCompute=True)
