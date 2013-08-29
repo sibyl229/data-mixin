@@ -82,7 +82,8 @@ class SeqData(AbstractComputedData):
         def score(index, pID):
             seqObj = seq_help.get_seq(index)
             seq = seqObj.seq
-            startPos, endPos = 1, len(seq) # assume starting M removed
+            #startPos, endPos = 1, len(seq) # assume starting M removed
+            startPos, endPos = 0, len(seq) # assume starting with M
             chain = gff_help.get_longest_chain(pID) 
             if chain:
                 startPos, endPos = chain
@@ -261,13 +262,20 @@ class DegrMotifData(DisorderData):
             for rgn in dregions:
                 kCount += len(re.findall(KENPattern, rgn))
                 dCount += len(re.findall(DPattern, rgn))
-
-            return (kCount, dCount)
+            
+            # if kCount > 0 or dCount > 0:
+            #     import pdb; pdb.set_trace()
+            kCountWhole = len(re.findall(KENPattern, seq))
+            dCountWhole = len(re.findall(DPattern, seq))
+            
+            return (kCount, dCount, kCountWhole, dCountWhole)
 
 
         dtype=[('Uniprot', '|S20'),
                ('numKENbox', int),
                ('numDbox', int),
+               ('numKENboxWhole', int),
+               ('numDboxWhole', int),
         ]
 
         allScores = []
