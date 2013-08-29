@@ -113,29 +113,43 @@ with open(normalizedFeaturePath, 'w') as f:
 #
 # correlation between feature and HL
 #
-numPerRow = 2
+def featureVsHLHeatMap(halfLife, feature, normalizeBy='equi-HL-bin-size'):
+    '''normalizeBy either 'equi-HL-bin-size' or 'equi-feature-bin-size' '''
 
-def plotFeatureAgainstHL(featureNames, numPerRow=2):
+    # generate a heatmap (a 2d array) whose 1st dimension (vertical) represent different halfLife,
+    # and 2nd dimension (horizontal) represents the feature score
+    heatmap, xedges, yedges = \
+        np.histogram2d(halfLife, feature,
+                       range=[[0,100],[-3,3]], 
+                       bins=20)
+    # due to skewness, normalized by total number of proteins of similar half-life (in the same bin)
+    # or by total number of protein of similar feature value
+    num_prot_by_halflife_bins = np.sum(heatmap,axis=1)[:,None] 
+    num_prot_by_feature_bins = np.sum(heatmap,axis=0)[None,:] 
+    if normalizeBy == 'equi-feature-bin-size':
+        heatmap = heatmap / num_prot_by_feature_bins
+    else:
+        heatmap = heatmap / num_prot_by_halflife_bins
+    heatmap = np.nan_to_num(heatmap)
+
+    extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+    return heatmap, extent
+
+
+def plotFeatureAgainstHL(normalizedFeatureData, featureNames, normalizeBy='equi-feature-bin-size', numPerRow=2):
     numRows = int(np.ceil(len(featureNames) / numPerRow))
     fig, subplots = plt.subplots(numRows, numPerRow, sharex=True, sharey=True)
+    #import pdb; pdb.set_trace()
+
     #subplots = [ax1, ax2, ax3, ax4]
     for (j, featName) in enumerate(featureNames):
-        sbpl = subplots[int(j/numPerRow)][ j % numPerRow]
+        if numRows > 1:
+            sbpl = subplots[int(j/numPerRow)][ j % numPerRow]
+        else:
+            sbpl = subplots[j % numPerRow]
 
-        # generate a heatmap (a 2d array) whose 1st dimension (vertical) represent different halfLife,
-        # and 2nd dimension (horizontal) represents the feature score
-        heatmap, xedges, yedges = \
-            np.histogram2d(halfLifeArray, normalizedFeatures[:,j],
-                           range=[[0,100],[-3,3]], 
-                           bins=20)
-        # due to skewness, normalized by total number of proteins of similar half-life (in the same bin)
-        num_prot_by_halflife_bins = np.sum(heatmap,axis=1)[:,None] 
-        #num_prot_by_halflife_bins = np.sum(heatmap,axis=0)[None,:] 
-    #    import pdb; pdb.set_trace()
-        heatmap = heatmap / num_prot_by_halflife_bins
-        heatmap = np.nan_to_num(heatmap)
-
-        extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+        heatmap, extent = featureVsHLHeatMap(halfLifeArray, 
+                                             normalizedFeatureData[:,j], normalizeBy=normalizeBy)
         # imshow display the 2darray like an image, so the heatmap needs to be rotated 
         # by 90 degree counterclockwise, for its first and second dimensions along x-axis and
         # y-axis respectively. 
@@ -146,20 +160,21 @@ def plotFeatureAgainstHL(featureNames, numPerRow=2):
         #sbpl.set_xlabel('Half-life in hours')
         sbpl.set_ylabel('Norm. Score')#('Normalized feature score')
 
-    # sbpl.set_xlim(-1,1)
-    # sbpl.set_ylim(0,60)
-#    plt.show()
     return fig
 
 from matplotlib.backends.backend_pdf import PdfPages
 if __name__ == '__main__':
-    perSheet = 16
-    numPerRow = 4
+    numRows = 2
+    numPerRow = 2
+    perSheet = numPerRow * numRows
     pp = PdfPages('plot_features.pdf')
+    pp2 = PdfPages('plot_features2.pdf')
     for i in range(0, len(otherColNames), perSheet):
-        cns = otherColNames[i : i+perSheet]
-        fig = plotFeatureAgainstHL(cns, numPerRow=numPerRow)
-        #import code; code.interact(local=locals())
+        header = otherColNames[i : i+perSheet]
+        data = normalizedFeatures[:, i: i+perSheet]
+        fig = plotFeatureAgainstHL(data, header, numPerRow=numPerRow, normalizeBy='equi-HL-bin-size')
         fig.savefig(pp, format='pdf')
+        fig2 = plotFeatureAgainstHL(data, header, numPerRow=numPerRow, normalizeBy='equi-feature-bin-size')
+        fig2.savefig(pp2, format='pdf')
     pp.close()
-##    plotFeatureAgainstHL(otherColNames, numPerRow=4)
+    pp2.close()
