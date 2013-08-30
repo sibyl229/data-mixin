@@ -178,8 +178,8 @@ if __name__ == '__main__':
     numRows = 2
     numPerRow = 2
     perSheet = numPerRow * numRows
-    pp = PdfPages('plot_features.pdf')
-    pp2 = PdfPages('plot_features2.pdf')
+    pp = PdfPages('fig/plot_features.pdf')
+    pp2 = PdfPages('fig/plot_features2.pdf')
     #chosenColumns = np.array([not trivialCol(combinedFeatures[nm]) for nm in otherColNames])
     chosenColumns = np.array([True for nm in otherColNames])
     chosenColumnNames = np.array(otherColNames)[chosenColumns]

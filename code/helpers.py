@@ -1,5 +1,6 @@
 import numpy as np 
-
+import os
+import errno
 
 def column_stack(*ndArrs):
     '''ensure columns in these arrays are named'''
@@ -24,6 +25,13 @@ def column_stack(*ndArrs):
 
     
 
+def make_sure_path_exists(path):
+    '''Create the directory if not existent already'''
+    try:
+        os.makedirs(path)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
 
 
 
