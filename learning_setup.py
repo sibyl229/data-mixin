@@ -94,11 +94,18 @@ means = np.mean(featuresArray, axis=0)
 stds = np.std(featuresArray, axis=0)
 maxes = np.max(featuresArray, axis=0)
 mins = np.min(featuresArray, axis=0)
-need_normalize = np.logical_or(maxes > 1, mins < -1)
-normalizedFeatures = featuresArray * 2 # so it resolves better on heatmap
-# only normalize features with range fall out side of [-1,1]
+need_scaling = np.logical_and(maxes <= 1, mins >= -1)
+scaledFeatures = featuresArray * 1
+scaledFeatures[:,need_scaling] = \
+    (featuresArray * 2)[:,need_scaling]
+
+isbigValue = np.logical_or(featuresArray>3, featuresArray<-3)
+bigValueRatio = np.sum(isbigValue, axis=0)/featuresArray.shape[0]
+need_normalize = bigValueRatio > 0.05
+# only normalize features with more than 5 percent fall out side of [-3,3]
+normalizedFeatures = scaledFeatures * 1
 normalizedFeatures[:,need_normalize] = \
-    ((featuresArray - means) / stds)[:,need_normalize]
+    ((scaledFeatures - means) / stds)[:,need_normalize]
 normalizedFeaturePath = os.path.join(CLEAN_INPUT_PATH,
                                    'normalized_features.tsv')
 headerNormalizedFeature = combinedFeatures.dtype.names[1:] # ignore id column for now
@@ -139,7 +146,6 @@ def featureVsHLHeatMap(halfLife, feature, normalizeBy='equi-HL-bin-size'):
 def plotFeatureAgainstHL(normalizedFeatureData, featureNames, normalizeBy='equi-feature-bin-size', numPerRow=2):
     numRows = int(np.ceil(len(featureNames) / numPerRow))
     fig, subplots = plt.subplots(numRows, numPerRow, sharex=True, sharey=True)
-    #import pdb; pdb.set_trace()
 
     #subplots = [ax1, ax2, ax3, ax4]
     for (j, featName) in enumerate(featureNames):
@@ -162,6 +168,11 @@ def plotFeatureAgainstHL(normalizedFeatureData, featureNames, normalizeBy='equi-
 
     return fig
 
+def trivialCol(colArray):
+    '''test if more than 99% of the column is 0'''
+    numZeroes = np.sum(colArray==0)
+    return numZeroes > len(colArray)*0.99
+
 from matplotlib.backends.backend_pdf import PdfPages
 if __name__ == '__main__':
     numRows = 2
@@ -169,12 +180,18 @@ if __name__ == '__main__':
     perSheet = numPerRow * numRows
     pp = PdfPages('plot_features.pdf')
     pp2 = PdfPages('plot_features2.pdf')
-    for i in range(0, len(otherColNames), perSheet):
-        header = otherColNames[i : i+perSheet]
-        data = normalizedFeatures[:, i: i+perSheet]
+    #chosenColumns = np.array([not trivialCol(combinedFeatures[nm]) for nm in otherColNames])
+    chosenColumns = np.array([True for nm in otherColNames])
+    chosenColumnNames = np.array(otherColNames)[chosenColumns]
+    chosenFeatures = normalizedFeatures[:,chosenColumns]
+    #import pdb; pdb.set_trace()
+    for i in range(0, len(chosenColumnNames), perSheet):
+        header = chosenColumnNames[i : i+perSheet]
+        data = chosenFeatures[:, i: i+perSheet]
         fig = plotFeatureAgainstHL(data, header, numPerRow=numPerRow, normalizeBy='equi-HL-bin-size')
         fig.savefig(pp, format='pdf')
         fig2 = plotFeatureAgainstHL(data, header, numPerRow=numPerRow, normalizeBy='equi-feature-bin-size')
         fig2.savefig(pp2, format='pdf')
+        plt.close()
     pp.close()
     pp2.close()
