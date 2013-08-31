@@ -16,12 +16,16 @@ Different from AbstractData class, this one is extended by classes that compute 
     __metaclass__ = ABCMeta
     
     @abstractmethod
-    def __init__(self, inputFileName, featureFileName, inpath=None, forceCompute=False):
-        inpath = inpath or RAW_INPUT_PATH
-        self.rawInputFilePath = os.path.join(inpath, inputFileName)
-        
+    def __init__(self, inputFileName, featureFileName, forceCompute=False):
+        self.rawInputFilePath = os.path.join(RAW_INPUT_PATH, inputFileName)
+        dirNameMatch = re.search(r'(\w+)/', inputFileName)
+        # usually the directory by species name, but could could be any 
+        # subdirectory containing raw data and raw feature files
+        dirName = dirNameMatch and dirNameMatch.group(1) 
         self.featureFileName = featureFileName
-        self.featureFilePath = os.path.join(RAW_INPUT_PATH, self.featureFileName)
+        self.featureFilePath = os.path.join(RAW_INPUT_PATH, 
+                                            dirName,
+                                            self.featureFileName)
  
         try:
             with open(self.featureFilePath,'r'): pass
@@ -121,9 +125,9 @@ class SeqData(AbstractComputedData):
 
 class DisorderData(AbstractComputedData):
 
-    def __init__(self, forceCompute=False): 
-        rawInputName = 'MDB_Homo_sapiens/disorder_consensus.fasta'
-        featureFileName = 'MDB_Homo_sapiens_disorder_consensus.csv'
+    def __init__(self, forceCompute=False, 
+                 rawInputName='MDB_Homo_sapiens/disorder_consensus.fasta',
+                 featureFileName='MDB_Homo_sapiens_disorder_consensus.csv'):
         super(DisorderData, self).__init__(
              rawInputName, featureFileName, forceCompute=forceCompute)
 
@@ -193,9 +197,9 @@ class DisorderData(AbstractComputedData):
 
 class SecStructData(AbstractComputedData):
 
-    def __init__(self, forceCompute=False): 
-        rawInputName = 'MDB_Homo_sapiens/annotations.fasta'
-        featureFileName = 'MDB_Homo_sapiens_sec_struct.csv'
+    def __init__(self, forceCompute=False,
+                 rawInputName='MDB_Homo_sapiens/annotations.fasta',
+                 featureFileName='MDB_Homo_sapiens_sec_struct.csv'):
         super(SecStructData, self).__init__(
              rawInputName, featureFileName, forceCompute=forceCompute)
 
@@ -244,9 +248,9 @@ class SecStructData(AbstractComputedData):
 
 class DegrMotifData(DisorderData):
 
-    def __init__(self, forceCompute=False): 
-        rawInputName = 'MDB_Homo_sapiens/disorder_consensus.fasta'
-        featureFileName = 'MDB_Homo_sapiens_degr_motif.csv'
+    def __init__(self, forceCompute=False,
+                 rawInputName='MDB_Homo_sapiens/disorder_consensus.fasta',
+                 featureFileName='MDB_Homo_sapiens_degr_motif.csv'): 
         AbstractComputedData.__init__(self,
             rawInputName, featureFileName, forceCompute=forceCompute)
 
@@ -303,8 +307,21 @@ class DegrMotifData(DisorderData):
 
 
 class AbstractSitesData(AbstractComputedData):
+    '''Deals with multispecies Ubiquitination, acetylation site data file'''
+    
+    @abstractmethod
+    def __init__(self,
+                 rawInputName,
+                 featureFileName,
+                 organism,
+                 forceCompute=forceCompute): 
+        featureFileName = organism + '_' + featureFileName
+        super(MetSitesData, self).__init__(
+             rawInputName, featureFileName, forceCompute=forceCompute)
+
 
     def setup(self):
+    
         # not sure why genfromtxt refuses to use the first line as
         # header, when names=True, so doing this manually
         with open(self.rawInputFilePath,'r') as f:
@@ -324,7 +341,7 @@ class AbstractSitesData(AbstractComputedData):
             {cname:i for i,cname in enumerate(self.sitesData.dtype.names)}
   
         organism = self.sitesData['ORG']
-        self.sitesData = self.sitesData[organism=='human']
+        self.sitesData = self.sitesData[organism==self.organism]
         locate = {} # locate the entries by protein ID
         for i,entry in enumerate(self.sitesData):
             pid = self.getEntryID(entry)
@@ -386,34 +403,42 @@ class AbstractSitesData(AbstractComputedData):
 
 class UbqSitesData(AbstractSitesData):
 
-    def __init__(self, forceCompute=False): 
-        rawInputName = 'Ubiquitination_site_dataset'
-        featureFileName = 'Ubiquitination_site.tsv'
+    def __init__(self, forceCompute=False,
+                 rawInputName = 'Ubiquitination_site_dataset',
+                 featureFileName = 'Ubiquitination_site.tsv',
+                 organism='human'): 
+        self.organism = organism
         self.abbr = 'Ubiq'
         super(UbqSitesData, self).__init__(
              rawInputName, featureFileName, forceCompute=forceCompute)
 
 class AcetSitesData(AbstractSitesData):
 
-    def __init__(self, forceCompute=False): 
-        rawInputName = 'Acetylation_site_dataset'
-        featureFileName = 'Acetylation_site.tsv'
+    def __init__(self, forceCompute=False,
+                 rawInputName = 'Acetylation_site_dataset',
+                 featureFileName = 'Acetylation_site.tsv', 
+                 organism='human'): 
+        self.organism = organism
         super(AcetSitesData, self).__init__(
              rawInputName, featureFileName, forceCompute=forceCompute)
 
 class PhosphoSitesData(AbstractSitesData):
 
-    def __init__(self, forceCompute=False): 
-        rawInputName = 'Phosphorylation_site_dataset'
-        featureFileName = 'Phosphorylation_site.tsv'
+    def __init__(self, forceCompute=False,
+                 rawInputName = 'Phosphorylation_site_dataset',
+                 featureFileName = 'Phosphorylation_site.tsv',
+                 organism='human'): 
+        self.organism = organism
         super(PhosphoSitesData, self).__init__(
              rawInputName, featureFileName, forceCompute=forceCompute)
 
 class MetSitesData(AbstractSitesData):
 
-    def __init__(self, forceCompute=False): 
-        rawInputName = 'Methylation_site_dataset'
-        featureFileName = 'Methylation_site.tsv'
+    def __init__(self, forceCompute=False,
+                 rawInputName = 'Methylation_site_dataset',
+                 featureFileName = 'Methylation_site.tsv',
+                 organism='human'): 
+        self.organism = organism
         super(MetSitesData, self).__init__(
              rawInputName, featureFileName, forceCompute=forceCompute)
 
