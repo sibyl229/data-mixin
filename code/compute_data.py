@@ -13,19 +13,15 @@ class AbstractComputedData(object):
 Different from AbstractData class, this one is extended by classes that compute feature scores 
 (and backs them up in a feature file).
  '''
-    __metaclass__ = ABCMeta
+    
     
     @abstractmethod
-    def __init__(self, inputFileName, featureFileName, forceCgompute=False):
+    def __init__(self, inputFileName, featureFileName, forceCompute=False):
         self.rawInputFilePath = os.path.join(RAW_INPUT_PATH, inputFileName)
-        dirNameMatch = re.search(r'(\w+)/', inputFileName)
-        # usually the directory by species name, but could could be any 
-        # subdirectory containing raw data and raw feature files
-        dirName = dirNameMatch and dirNameMatch.group(1) 
         self.featureFileName = featureFileName
-        self.featureFilePath = os.path.join(RAW_INPUT_PATH, 
-                                            dirName,
-                                            self.featureFileName)
+        self.featureFilePath = os.path.abspath(
+            os.path.join(RAW_INPUT_PATH, 
+                         self.featureFileName))
  
         try:
             with open(self.featureFilePath,'r'): pass
