@@ -16,7 +16,7 @@ Different from AbstractData class, this one is extended by classes that compute 
     __metaclass__ = ABCMeta
     
     @abstractmethod
-    def __init__(self, inputFileName, featureFileName, forceCompute=False):
+    def __init__(self, inputFileName, featureFileName, forceCgompute=False):
         self.rawInputFilePath = os.path.join(RAW_INPUT_PATH, inputFileName)
         dirNameMatch = re.search(r'(\w+)/', inputFileName)
         # usually the directory by species name, but could could be any 
@@ -314,7 +314,7 @@ class AbstractSitesData(AbstractComputedData):
                  rawInputName,
                  featureFileName,
                  organism,
-                 forceCompute=forceCompute): 
+                 forceCompute=False): 
         featureFileName = organism + '_' + featureFileName
         super(MetSitesData, self).__init__(
              rawInputName, featureFileName, forceCompute=forceCompute)
@@ -441,17 +441,6 @@ class MetSitesData(AbstractSitesData):
         self.organism = organism
         super(MetSitesData, self).__init__(
              rawInputName, featureFileName, forceCompute=forceCompute)
-
-        
-if __name__ == '__main__':
-    DegrMotifData(forceCompute=True)
-    SecStructData(forceCompute=True)
-    DisorderData(forceCompute=True)
-    SeqData(forceCompute=True)
-    UbqSitesData(forceCompute=True)
-    MetSitesData(forceCompute=True)
-    AcetSitesData(forceCompute=True)
-    PhosphoSitesData(forceCompute=True)
                      
                  
 
