@@ -7,6 +7,21 @@ from species.base import *
 class MySPC(SpeciesConnectivityMixin):
     SPECIES = Species.ALL_SPECIES[__name__]
 
+
+## class that contains Half Lifes
+## used as template for organizing other features
+class DegRateData(AbstractData, MySPC):
+    CONTAINS_HALF_LIFE_DATA = True
+
+    def __init__(self):
+        featureFileName = self.path('pr101183k_si_002_HeLa.csv')
+        idColName = 'Uniprot'
+        usecols = [3,11]
+        super(DegRateData, self).__init__(
+            featureFileName, idColName, usecols=usecols)
+
+
+## Below are other feature classes
 class MyDisorderData(DisorderData, MySPC):
 
     def __init__(self, forceCompute=False):
@@ -61,7 +76,6 @@ class MyPhosphoSitesData(PhosphoSitesData, MySPC):
             organism='human',
             forceCompute=forceCompute
         )
-
 
 class MyMetSitesData(MetSitesData, MySPC):
     def __init__(self, forceCompute=False):

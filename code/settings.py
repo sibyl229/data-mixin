@@ -2,8 +2,8 @@
 import os
 from helpers import make_sure_path_exists
 
-PROJECT_ROOT = os.path.join(os.path.dirname(__file__),
-                            '../')
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '../'))
 RAW_INPUT_PATH = os.path.join(PROJECT_ROOT, 'raw_inputs/')
 CLEAN_INPUT_PATH = os.path.join(PROJECT_ROOT, 'input/')
 FEATURE_FILE_PATH = os.path.join(PROJECT_ROOT, 'input/features')

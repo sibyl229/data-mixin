@@ -6,9 +6,20 @@ from data import *
 from DataRemap import remap
 from species.base import Species
 
-    
-def lookup_table(lst):
-        return {i:sp for i,sp in enumerate(lst)}
+
+### Register species modules HERE!
+### In the format of Species(modulename, alias)
+### A module specifies data/features for a species, including: 
+###their file locations and preprocessing steps
+
+species_choices = [
+    Species('species.human', 'Human'),
+]
+
+
+### helpers for command line interface    
+def lookup_table(lst, f=lambda item: item):
+    return {i:f(sp) for i,sp in enumerate(lst)}
 
 def print_table(dtable, to_string=None):
     for key, item in dtable.items():
@@ -17,6 +28,7 @@ def print_table(dtable, to_string=None):
         else:
             itemStr = str(item)
         print '%3d\t%s' % (key, itemStr)
+    print 'Ctrl-c\tExit'
 
 def parse_int(inStr):
     matchInt = re.search(r'(\d+)',inStr)
@@ -28,7 +40,7 @@ def parse_int(inStr):
 
 def compute_features(species):
 
-    t = lookup_table(species.dataClasses)
+    t = lookup_table(species.get_computed_data_classes())
     print_table(t)
     response = raw_input(
         '''Enter Data Code separated by white space:
@@ -46,17 +58,14 @@ Enter 'A' for all features and 'B' for Returning to Previous Step
         dc(forceCompute=True)
     return
 
-def map_features(species):
-    for dc in species.dataClasses:
-        remap(dc())
 
-#species_list = Species.ALL_SPECIES.values()
+class MenuReturn(Exception):
+    pass
 
+def raise_menu_return_exception():
+    raise MenuReturn()
 
-species_choices = [
-    Species('species.human', 'Human'),
-]
-
+### command line interface
     
 if __name__ == '__main__':
 
@@ -74,21 +83,24 @@ if __name__ == '__main__':
         
             while(True):
                 try:
-                    opDict = {
-                        'Compute Features': (lambda: compute_features(species)),
-                        'Map Features': (lambda: map_features(species)),
+                    operations = [
+                        ('Compute Features', lambda: compute_features(species)),
+                        ('Map Features', lambda: remap(species)),
                         #   'Combine Features': lambda: ,
-                    }
-                    t2 = lookup_table(opDict.keys())
+                        ('Back to Previous', raise_menu_return_exception)
+                    ]
+                    t2 = lookup_table(operations, f=lambda itm: itm[0])
                     #import pdb; pdb.set_trace()
 
                     print_table(t2)
                     opCode = raw_input('Enter Operation Code:\n')
                     opName = t2[parse_int(opCode)]
-                    opDict[opName]()
+                    dict(operations)[opName]()
     
                 except KeyError, ValueError:
                     print 'Invalid Operation'
+                except MenuReturn:
+                    break
                 
         except KeyboardInterrupt:
             sys.exit()

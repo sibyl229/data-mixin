@@ -2,7 +2,7 @@ from __future__ import division
 import os
 import numpy as np
 import re
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 from settings import *
 
 class AbstractData(object):
@@ -10,14 +10,13 @@ class AbstractData(object):
 and Used by Remap(), which calls get_all_data().
 Intended to be inherited by concrete data classes that deal with specific data. For an example, refer to DegRateData class below'''
 
-    __metaclass__ = ABCMeta
     
     @abstractmethod
-    def __init__(self, featureFileName, idColName, inpath=None, usecols=None):
+    def __init__(self, featureFileName, idColName, usecols=None):
         # read data from file
         self.featureFileName = featureFileName
-        inpath = inpath or RAW_INPUT_PATH
-        self.featureFilePath = os.path.join(inpath, self.featureFileName)
+        self.featureFilePath = os.path.join(RAW_INPUT_PATH, 
+                                            self.featureFileName)
         self.rawdata = np.genfromtxt(self.featureFilePath, delimiter='\t', 
             usecols=usecols, #Note None would include all columns
             dtype=None, names=True)
@@ -51,7 +50,8 @@ Intended to be inherited by concrete data classes that deal with specific data. 
         else:
             return None
 
-
+'''
+This class is kept as an example. For practical use, include such in submodules of a under package species
 class DegRateData(AbstractData):
 
     def __init__(self):
@@ -63,3 +63,4 @@ class DegRateData(AbstractData):
         super(DegRateData, self).__init__(
             featureFileName, idColName, usecols=usecols)
 
+'''

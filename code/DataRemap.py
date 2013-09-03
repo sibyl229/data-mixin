@@ -12,28 +12,26 @@ so that they all have
     2) without any duplicate''' 
 
 
-def get_target_proteinIDs():
-    proteinsPath = os.path.join(CLEAN_INPUT_PATH, 'target_proteins.txt')
+def get_target_proteinIDs(hlData, backupPath):
     try:
-        with open(proteinsPath): pass
+        with open(backupPath): pass
     except IOError:
         def extract_target_proteins():
-            majorIDs, otherData = DegRateData.get_all_data()
+            majorIDs, otherData = hlData.get_all_data()
             majorIDs = np.unique(majorIDs[majorIDs != 'None'])
-            with open(proteinsPath, 'w') as f:
+            with open(backupPath, 'w') as f:
                 np.savetxt(f, majorIDs, fmt=['%s'])
         extract_target_proteins()
 
     pIDs = None
-    with open(proteinsPath, 'r') as f:
+    with open(backupPath, 'r') as f:
         pIDs = np.genfromtxt(f, dtype=None)
 
     return pIDs
 
-targetProtList = get_target_proteinIDs()
 
 # intended to be called by remap() below
-def _get_data_of_target(sourceProtIds, sourceData, outputPath=None):
+def _get_data_of_target(targetProtList, sourceProtIds, sourceData, outputPath=None):
 #    targetProtList = get_target_proteinIDs()
     pIDtoIndex = {pid: i \
         for (i,pid) in reversed(list(enumerate(sourceProtIds)))} # revered iteration to ensure using first entry, in case of duplicate protein ID among entries
@@ -72,21 +70,32 @@ def _get_data_of_target(sourceProtIds, sourceData, outputPath=None):
     return targetIDAndData
 
 
-def remap(dataObj):
-    name = re.search(r'(.*)\.\w+', dataObj.featureFileName).group(1)
-    outpath = os.path.join(FEATURE_FILE_PATH, 'featureFrom_'+name+'.csv')
-    allIds, allData = dataObj.get_all_data()
-    return _get_data_of_target(allIds, allData, outpath)
+def remap(species):
+    #outbase = os.path.join(CLEAN_INPUT_PATH, species.rel_path())
+    masterProtListPath = os.path.join(
+        CLEAN_INPUT_PATH, 
+        species.rel_path('proteins_master_list.txt'))    
+    masterProtList = get_target_proteinIDs(
+        species.HLDataClass(), masterProtListPath
+        )
+                    
+    for dataCls in species.dataClasses:
+        dataObj = dataCls()
+        name = re.search(r'(.*)\.\w+', dataObj.featureFileName).group(1)
+        outpath = os.path.join(CLEAN_INPUT_PATH,
+                               name+'.derived_features.tsv') # name includes path species specific path info
+        allIds, allData = dataObj.get_all_data()
+        _get_data_of_target(masterProtList, allIds, allData, outpath)
 
 
-if __name__ == '__main__':
-    remap(DegRateData())
-    remap(DisorderData()) 
-    remap(SeqData())
-    remap(UbqSitesData())
-    remap(AcetSitesData())
-    remap(MetSitesData())
-    remap(PhosphoSitesData())
-    remap(DegrMotifData())
-    remap(SecStructData())
+# if __name__ == '__main__':
+#     remap(DegRateData())
+#     remap(DisorderData()) 
+#     remap(SeqData())
+#     remap(UbqSitesData())
+#     remap(AcetSitesData())
+#     remap(MetSitesData())
+#     remap(PhosphoSitesData())
+#     remap(DegrMotifData())
+#     remap(SecStructData())
 
