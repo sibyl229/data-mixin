@@ -12,8 +12,7 @@ class AbstractComputedData(object):
     '''Similar to AbstractData class, AbstractComputedData also implements get_all_data() used by remap().
 Different from AbstractData class, this one is extended by classes that compute feature scores 
 (and backs them up in a feature file).
- '''
-    
+ '''    
     
     @abstractmethod
     def __init__(self, inputFileName, featureFileName, forceCompute=False):
@@ -70,9 +69,9 @@ class SeqData(AbstractComputedData):
     AA = sorted(AA_NUM_CODE, key=AA_NUM_CODE.get) # sort the key by value
     NUM_AA = 20
 
-    def __init__(self, forceCompute=False): 
-        rawInputName = 'MDB_Homo_sapiens/sequences.fasta'
-        featureFileName = 'MDB_Homo_sapiens_seq_characters.tsv'
+    def __init__(self, forceCompute=False,
+        rawInputName = 'MDB_Homo_sapiens/sequences.fasta',
+        featureFileName = 'MDB_Homo_sapiens_seq_characters.tsv'):
         super(SeqData, self).__init__(
              rawInputName, featureFileName, forceCompute=forceCompute)
 
@@ -311,8 +310,11 @@ class AbstractSitesData(AbstractComputedData):
                  featureFileName,
                  organism,
                  forceCompute=False): 
-        featureFileName = organism + '_' + featureFileName
-        super(MetSitesData, self).__init__(
+        featureFileName = re.sub(r'(.+\.)(\w+)$', 
+                                 r'\1%s.\2' % organism, 
+                                 featureFileName) # insert organism name before the file extenstion
+        self.organism = organism # used to filter entries in multiorganism data
+        super(AbstractSitesData, self).__init__(
              rawInputName, featureFileName, forceCompute=forceCompute)
 
 
@@ -403,10 +405,10 @@ class UbqSitesData(AbstractSitesData):
                  rawInputName = 'Ubiquitination_site_dataset',
                  featureFileName = 'Ubiquitination_site.tsv',
                  organism='human'): 
-        self.organism = organism
+        
         self.abbr = 'Ubiq'
         super(UbqSitesData, self).__init__(
-             rawInputName, featureFileName, forceCompute=forceCompute)
+             rawInputName, featureFileName, organism, forceCompute=forceCompute)
 
 class AcetSitesData(AbstractSitesData):
 
@@ -414,9 +416,9 @@ class AcetSitesData(AbstractSitesData):
                  rawInputName = 'Acetylation_site_dataset',
                  featureFileName = 'Acetylation_site.tsv', 
                  organism='human'): 
-        self.organism = organism
+
         super(AcetSitesData, self).__init__(
-             rawInputName, featureFileName, forceCompute=forceCompute)
+             rawInputName, featureFileName, organism, forceCompute=forceCompute)
 
 class PhosphoSitesData(AbstractSitesData):
 
@@ -424,9 +426,9 @@ class PhosphoSitesData(AbstractSitesData):
                  rawInputName = 'Phosphorylation_site_dataset',
                  featureFileName = 'Phosphorylation_site.tsv',
                  organism='human'): 
-        self.organism = organism
+
         super(PhosphoSitesData, self).__init__(
-             rawInputName, featureFileName, forceCompute=forceCompute)
+             rawInputName, featureFileName, organism, forceCompute=forceCompute)
 
 class MetSitesData(AbstractSitesData):
 
@@ -434,9 +436,9 @@ class MetSitesData(AbstractSitesData):
                  rawInputName = 'Methylation_site_dataset',
                  featureFileName = 'Methylation_site.tsv',
                  organism='human'): 
-        self.organism = organism
+
         super(MetSitesData, self).__init__(
-             rawInputName, featureFileName, forceCompute=forceCompute)
+             rawInputName, featureFileName, organism, forceCompute=forceCompute)
                      
                  
 
