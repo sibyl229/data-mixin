@@ -1,6 +1,8 @@
 *.pyc
 *.*~
-#*
-q
+\#*#
 raw_inputs/
 gwREADME
+my_scratch.py
+code/oldjunk/
+
