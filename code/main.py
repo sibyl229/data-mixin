@@ -8,10 +8,12 @@ from species.base import Species
 
 
 ### Register species modules HERE!
-### In the format of Species(modulename, alias)
+### In the format of Species(modulename, alias), 
+###where alias is also the species specific subdirectory in raw_inputs/
+### OR Species(modulename, alias, directory), to specifiy another directory
+###base on its relative path from raw_inputs/
 ### A module specifies data/features for a species, including: 
 ###their file locations and preprocessing steps
-
 species_choices = [
     Species('species.human', 'Human'),
 ]
