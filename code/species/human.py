@@ -14,6 +14,7 @@ class DegRateData(AbstractData, MySPC):
     CONTAINS_HALF_LIFE_DATA = True
 
     def __init__(self):
+        self.halfLifeColumnName = 'halflife_t12_in_h'
         featureFileName = self.path('pr101183k_si_002_HeLa.csv')
         idColName = 'Uniprot'
         usecols = [3,11]

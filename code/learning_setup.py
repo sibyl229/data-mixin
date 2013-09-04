@@ -15,106 +15,120 @@ Note: same proteins and their order are expected across all feature files.
 Finally, keep only proteins with values across all features. And normalize each feature the scores
 '''
 
-#
-# take various feature files and vertically join them
-#
-pIDs = None
-featuresStacked = None
-hasValueStacked = None
+def is_feature_file(fileName):
+    return re.search(r'derived_features', fileName)
 
-for (dirpath, dirnames, filenames) in os.walk(FEATURE_FILE_PATH):
-    for f in filenames:
-        featureFilePath = os.path.join(dirpath, f)
-        feature = np.genfromtxt(featureFilePath, delimiter='\t', 
-            dtype=None, names=True)
-        
-        #
-        # extract protein id, half-life, and features
-        #
-        idColName = 'Uniprot'
-        excluded = ['Uniprot','hasValue'] # excluded from featuresStacked; other plans for these columns
-        featureColNames = \
-            [colName for colName in feature.dtype.names \
-             if colName not in excluded]
+def combine_features(species):
+    #
+    # take various feature files and vertically join them
+    #
+    pIDs = None
+    featuresStacked = None
+    
+    featurePathBase = os.path.join(CLEAN_INPUT_PATH,
+                                   species.rel_path())
 
-        # stacking features
-        if pIDs == None:
-            pIDs = feature[['Uniprot']] # This is a structured array.
-            featuresStacked = feature[featureColNames]
-            allHasValue = feature['hasValue']
-        else:
-            if np.all(pIDs['Uniprot'] == feature['Uniprot']): 
-                featuresStacked = column_stack(featuresStacked,
-                                               feature[featureColNames])
-                allHasValue = np.logical_and(allHasValue, feature['hasValue'])
+    for (dirpath, dirnames, filenames) in os.walk(featurePathBase):
+        for f in filenames:
+
+            if not is_feature_file(f):
+                continue # with next iteration of the loop
+
+            featureFilePath = os.path.join(dirpath, f)
+            feature = np.genfromtxt(featureFilePath, delimiter='\t', 
+                dtype=None, names=True)
+
+            #
+            # extract protein id, half-life, and features
+            #
+            excluded = ['Uniprot','hasValue'] # excluded from featuresStacked; other plans for these columns
+            featureColNames = \
+                [colName for colName in feature.dtype.names \
+                 if colName not in excluded]
+
+            # stacking features
+            if pIDs == None:
+                pIDs = feature[['Uniprot']] # This is a structured array.
+                featuresStacked = feature[featureColNames]
+                allHasValue = feature['hasValue']
             else:
-                raise Exception('Mismatch protein ids. Please only combine features on the same list of proteins')
+                if np.all(pIDs['Uniprot'] == feature['Uniprot']): 
+                    featuresStacked = column_stack(featuresStacked,
+                                                   feature[featureColNames])
+                    allHasValue = np.logical_and(allHasValue, feature['hasValue'])
+                else:
+                    raise Exception('Mismatch protein ids. Please only combine features on the same list of proteins')
 
 
-#
-# take only protein entries, where all features are available
-#
-pIDs = pIDs[allHasValue]
-featuresStacked = featuresStacked[allHasValue]
+    #
+    # take only protein entries, where all features are available
+    #
+    pIDs = pIDs[allHasValue]
+    featuresStacked = featuresStacked[allHasValue]
+    
+    #
+    # keep only cytoplasmic proteins
+    #
+    cytoplasmic = go_helper.is_cytoplasmic(pIDs['Uniprot'])
+    pIDs = pIDs[cytoplasmic]
+    featuresStacked = featuresStacked[cytoplasmic]
 
-#
-# keep only cytoplasmic proteins
-#
-cytoplasmic = go_helper.is_cytoplasmic(pIDs['Uniprot'])
-pIDs = pIDs[cytoplasmic]
-featuresStacked = featuresStacked[cytoplasmic]
+    #
+    # backup the combined feature into single file
+    #
+    halfLifes = featuresStacked[[species.halfLifeColumnName]]
+    otherColNames = \
+        [cn for cn in featuresStacked.dtype.names if cn != species.halfLifeColumnName]
+    combinedFeatures = column_stack(pIDs, halfLifes, 
+                                    featuresStacked[otherColNames])
+    combinedFeaturePath = os.path.join(featurePathBase,
+                                       'combined_features.tsv')
+    with open(combinedFeaturePath, 'w') as f:
+        np.savetxt(f, combinedFeatures, 
+                   delimiter='\t', comments='', fmt='%s',
+                   header='\t'.join(combinedFeatures.dtype.names))
 
-#
-# backup the combined feature into single file
-#
-halfLifes = featuresStacked[['halflife_t12_in_h']]
-otherColNames = \
-    [cn for cn in featuresStacked.dtype.names if cn != 'halflife_t12_in_h']
-combinedFeatures = column_stack(pIDs, halfLifes, 
-                                featuresStacked[otherColNames])
-combinedFeaturePath = os.path.join(CLEAN_INPUT_PATH,
-                                   'combined_features.tsv')
-with open(combinedFeaturePath, 'w') as f:
-    np.savetxt(f, combinedFeatures, 
-               delimiter='\t', comments='', fmt='%s',
-               header='\t'.join(combinedFeatures.dtype.names))
+    #
+    # Normalized features, and backup
+    #
+    numOfFeatures = len(featuresStacked[0])
+    data = np.genfromtxt(combinedFeaturePath, 
+                                  dtype=float, skip_header=1,
+                                  usecols=np.arange(numOfFeatures)+1, #skip id column
+                                  delimiter='\t')
+    featuresArray = data[:,1:]
+    halfLifeArray = data[:,0]
 
-#
-# Normalized features, and backup
-#
-numOfFeatures = len(featuresStacked[0])
-data = np.genfromtxt(combinedFeaturePath, 
-                              dtype=float, skip_header=1,
-                              usecols=np.arange(numOfFeatures)+1, #skip id column
-                              delimiter='\t')
-featuresArray = data[:,1:]
-halfLifeArray = data[:,0]
+    means = np.mean(featuresArray, axis=0)
+    stds = np.std(featuresArray, axis=0)
+    maxes = np.max(featuresArray, axis=0)
+    mins = np.min(featuresArray, axis=0)
+    need_scaling = np.logical_and(maxes <= 1, mins >= -1)
+    scaledFeatures = featuresArray * 1
+    scaledFeatures[:,need_scaling] = \
+        (featuresArray * 2)[:,need_scaling]
 
-means = np.mean(featuresArray, axis=0)
-stds = np.std(featuresArray, axis=0)
-maxes = np.max(featuresArray, axis=0)
-mins = np.min(featuresArray, axis=0)
-need_scaling = np.logical_and(maxes <= 1, mins >= -1)
-scaledFeatures = featuresArray * 1
-scaledFeatures[:,need_scaling] = \
-    (featuresArray * 2)[:,need_scaling]
+    isbigValue = np.logical_or(featuresArray>3, featuresArray<-3)
+    bigValueRatio = np.sum(isbigValue, axis=0)/featuresArray.shape[0]
+    need_normalize = bigValueRatio > 0.05
+    # only normalize features with more than 5 percent fall out side of [-3,3]
+    normalizedFeatures = scaledFeatures * 1
+    normalizedFeatures[:,need_normalize] = \
+        ((scaledFeatures - means) / stds)[:,need_normalize]
+    normalizedFeaturePath = os.path.join(featurePathBase,
+                                       'normalized_features.tsv')
+    headerNormalizedFeature = combinedFeatures.dtype.names[1:] # ignore id column for now
+    with open(normalizedFeaturePath, 'w') as f:
+        np.savetxt(f, 
+                   np.hstack((halfLifeArray[:,None], normalizedFeatures)), 
+                   delimiter='\t', comments='', fmt='%s',
+                   header='\t'.join(headerNormalizedFeature)
+        )
 
-isbigValue = np.logical_or(featuresArray>3, featuresArray<-3)
-bigValueRatio = np.sum(isbigValue, axis=0)/featuresArray.shape[0]
-need_normalize = bigValueRatio > 0.05
-# only normalize features with more than 5 percent fall out side of [-3,3]
-normalizedFeatures = scaledFeatures * 1
-normalizedFeatures[:,need_normalize] = \
-    ((scaledFeatures - means) / stds)[:,need_normalize]
-normalizedFeaturePath = os.path.join(CLEAN_INPUT_PATH,
-                                   'normalized_features.tsv')
-headerNormalizedFeature = combinedFeatures.dtype.names[1:] # ignore id column for now
-with open(normalizedFeaturePath, 'w') as f:
-    np.savetxt(f, 
-               np.hstack((halfLifeArray[:,None], normalizedFeatures)), 
-               delimiter='\t', comments='', fmt='%s',
-               header='\t'.join(headerNormalizedFeature)
-    )
+    return {
+        'combined_features': combinedFeatures,
+        'normalized_features': normalizedFeatures,
+    }
 
 
 #
