@@ -5,8 +5,8 @@ import re
 from Bio import SeqIO
 from abc import ABCMeta, abstractmethod
 from settings import *
+from gff_help import Gff
 import seq_help
-import gff_help
 
 class AbstractComputedData(object):
     '''Similar to AbstractData class, AbstractComputedData also implements get_all_data() used by remap().
@@ -77,13 +77,15 @@ class SeqData(AbstractComputedData):
 
 
     def compute_scores(self):
-        
+
+        gff = Gff(self.SPECIES) # general feature file
+
         def score(index, pID):
             seqObj = seq_help.get_seq(index)
             seq = seqObj.seq
             #startPos, endPos = 1, len(seq) # assume starting M removed
             startPos, endPos = 0, len(seq) # assume starting with M
-            chain = gff_help.get_longest_chain(pID) 
+            chain = gff.get_longest_chain(pID) 
             if chain:
                 startPos, endPos = chain
 
