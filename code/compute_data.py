@@ -360,6 +360,7 @@ class AbstractSitesData(AbstractComputedData):
     def compute_scores(self):
 
         self.setup()
+        seqHandle = MySequence(self.SPECIES)
 
         def get__sites(pid):
             indexes = self.data_locate.get(pid)
