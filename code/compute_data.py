@@ -6,7 +6,7 @@ from Bio import SeqIO
 from abc import ABCMeta, abstractmethod
 from settings import *
 from gff_help import Gff
-import seq_help
+from seq_help import MySequence
 
 class AbstractComputedData(object):
     '''Similar to AbstractData class, AbstractComputedData also implements get_all_data() used by remap().
@@ -79,9 +79,10 @@ class SeqData(AbstractComputedData):
     def compute_scores(self):
 
         gff = Gff(self.SPECIES) # general feature file
+        seqHandle = MySequence(self.SPECIES)
 
         def score(index, pID):
-            seqObj = seq_help.get_seq(index)
+            seqObj = seqHandle.get_seq(index)
             seq = seqObj.seq
             #startPos, endPos = 1, len(seq) # assume starting M removed
             startPos, endPos = 0, len(seq) # assume starting with M
@@ -106,7 +107,7 @@ class SeqData(AbstractComputedData):
             [(aa, int) for aa in self.AA]
         )
 
-        allScores = [score(index, pid) for index,pid  in seq_help.get_all_prot()]  # the index is used to retrive the entry from the fasta file
+        allScores = [score(index, pid) for index,pid  in seqHandle.get_all_prot()]  # the index is used to retrive the entry from the fasta file
         allScores = np.array(allScores,dtype=dtype)
 
         return allScores
@@ -253,6 +254,7 @@ class DegrMotifData(DisorderData):
 
 
     def compute_scores(self):
+        seqHandle = MySequence(self.SPECIES)
 
         def score(disorderSeq, seq):
             dregions = self.disorder_regions(disorderSeq, seq)
@@ -281,10 +283,10 @@ class DegrMotifData(DisorderData):
 
         allScores = []
         disorderFastaDict = SeqIO.index(self.rawInputFilePath, 'fasta')
-        for key, pid in seq_help.get_all_prot():
+        for key, pid in seqHandle.get_all_prot():
             disorderConsensus = disorderFastaDict.get(pid)
             if disorderConsensus:
-                seqRec = seq_help.get_seq(key)
+                seqRec = seqHandle.get_seq(key)
                 seq = str(seqRec.seq)
                 allScores.append(
                     (pid,) + score(disorderConsensus, seq))
@@ -390,7 +392,7 @@ class AbstractSitesData(AbstractComputedData):
                 [('%s_%s' %(self.class_abbr(),fn),t) for (fn,t) in dtype[1:]]
         
 
-        pIDs = seq_help.get_all_prot()
+        pIDs = seqHandle.get_all_prot()
         allScores = [score(key, pid) for key, pid in pIDs]
         allScores = np.array(allScores,dtype=dtype)
 

@@ -12,7 +12,7 @@ class MySPC(SpeciesConnectivityMixin):
         'gffName': 'uniprot-taxonomy%3A9606+AND+reviewed%3Ayes+AND+keyword%3A181.gff', # protein slicing and modification
         'goaName': 'gene_association.goa_human', # gene ontology
         'taxonNum': '9606',
-        'fastaName': '',
+        'seqName': 'uniprot-taxonomy%3A9606+AND+reviewed%3Ayes+AND+keyword%3A181.fasta', # human proteome of reviewed and canonical sequences
     })
 
 ## class that contains Half Lifes

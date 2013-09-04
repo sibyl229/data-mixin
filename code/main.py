@@ -101,6 +101,8 @@ if __name__ == '__main__':
                     dict(operations)[opName]()
     
                 except KeyError, ValueError:
+                    print KeyError
+                    print ValueError
                     print 'Invalid Operation'
                 except MenuReturn:
                     break
