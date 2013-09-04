@@ -9,7 +9,7 @@ class Species(object):
 
     ALL_SPECIES = {}
 
-    def __init__(self, moduleName, speciesName=None, relPath=None):
+    def __init__(self, moduleName, speciesName=None, relPath=None, ):
         '''
 moduleName: where features for the species is defined. Usually under species/ subpackage
 speciesName: a Human readable alias for your species
@@ -24,6 +24,7 @@ relPath: directory for species specific data, relative to the RAW_INPUT_PATH'''
             self.ALL_SPECIES[moduleName] = self
             self.moduleName = moduleName
             self.speciesName = speciesName or moduleName.split('.')[-1]
+            self.context = {}
             # create directory to store species specific cleaned feature
             # files
             make_sure_path_exists(os.path.join(CLEAN_INPUT_PATH, 
@@ -41,7 +42,6 @@ relPath: directory for species specific data, relative to the RAW_INPUT_PATH'''
         '''species specific data file path'''
         return os.path.join(self.relPath,
                             fileName)
-
 
     def __str__(self):
         return 'Species: %s @ %s' % (self.speciesName, self.path(''))

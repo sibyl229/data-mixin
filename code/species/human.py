@@ -4,17 +4,21 @@ from data import *
 from species.base import *
 
 
+
 class MySPC(SpeciesConnectivityMixin):
     SPECIES = Species.ALL_SPECIES[__name__]
-
+    ### Register a few context for the species
+    SPECIES.context.update({
+        'gffName': 'uniprot-taxonomy%3A9606+AND+reviewed%3Ayes+AND+keyword%3A181.gff',
+        'fastaName': '',
+    })
 
 ## class that contains Half Lifes
 ## used as template for organizing other features
 class DegRateData(AbstractData, MySPC):
     CONTAINS_HALF_LIFE_DATA = True
-
+    HALF_LIFE_COL_NAME = 'halflife_t12_in_h'
     def __init__(self):
-        self.halfLifeColumnName = 'halflife_t12_in_h'
         featureFileName = self.path('pr101183k_si_002_HeLa.csv')
         idColName = 'Uniprot'
         usecols = [3,11]
@@ -86,3 +90,5 @@ class MyMetSitesData(MetSitesData, MySPC):
             organism='human',
             forceCompute=forceCompute
         )
+
+

@@ -5,7 +5,7 @@ from data import *
 #from abc import ABCMeta, abstractmethod
 from DataRemap import remap
 from species.base import Species
-
+from learning_setup import combine_features
 
 ### Register species modules HERE!
 ### In the format of Species(modulename, alias), 
@@ -88,7 +88,7 @@ if __name__ == '__main__':
                     operations = [
                         ('Compute Features', lambda: compute_features(species)),
                         ('Map Features', lambda: remap(species)),
-                        #   'Combine Features': lambda: ,
+                        ('Combine Features', lambda: combine_features(species)),
                         ('Back to Previous', raise_menu_return_exception)
                     ]
                     t2 = lookup_table(operations, f=lambda itm: itm[0])

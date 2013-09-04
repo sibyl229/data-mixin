@@ -1,7 +1,7 @@
 from __future__ import division
 import os
+import re
 import numpy as np
-import scipy as sp
 import matplotlib.pyplot as plt
 from sklearn.linear_model import Ridge
 from helpers import column_stack
@@ -76,9 +76,10 @@ def combine_features(species):
     #
     # backup the combined feature into single file
     #
-    halfLifes = featuresStacked[[species.halfLifeColumnName]]
+    halfLifeColumnName = species.HLDataClass.HALF_LIFE_COL_NAME
+    halfLifes = featuresStacked[[halfLifeColumnName]]
     otherColNames = \
-        [cn for cn in featuresStacked.dtype.names if cn != species.halfLifeColumnName]
+        [cn for cn in featuresStacked.dtype.names if cn != halfLifeColumnName]
     combinedFeatures = column_stack(pIDs, halfLifes, 
                                     featuresStacked[otherColNames])
     combinedFeaturePath = os.path.join(featurePathBase,
