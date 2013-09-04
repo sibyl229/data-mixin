@@ -6,6 +6,7 @@ from data import *
 from DataRemap import remap
 from species.base import Species
 from learning_setup import combine_features
+from settings import *
 
 ### Register species modules HERE!
 ### In the format of Species(modulename, alias), 

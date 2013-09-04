@@ -2,48 +2,56 @@ import numpy as np
 import os
 from settings import *
 
-goPath = os.path.join(RAW_INPUT_PATH,
-                      'gene_association.goa_human')
+class GO(object):    
 
-goDataHeader = [
-    'DB',
-    'objID',
-    'objSym',
-    'qualifier',
-    'GOID',
-    'ref',
-    'evidence',
-    'from',
-    'aspect',
-    'objName',
-    'objSynonym',
-    'objType',
-    'taxon',
-    'date',
-    'assignedBy',
-    'annoExtension',
-    'fromID'
-]
+    goDataHeader = [
+        'DB',
+        'objID',
+        'objSym',
+        'qualifier',
+        'GOID',
+        'ref',
+        'evidence',
+        'from',
+        'aspect',
+        'objName',
+        'objSynonym',
+        'objType',
+        'taxon',
+        'date',
+        'assignedBy',
+        'annoExtension',
+        'fromID'
+    ]
+    
+    def __init__(self, species):
+        goaName = species.context['goaName']
+        self.taxonCode = species.context.get('taxonNum', None)
+        self.goPath = os.path.join(RAW_INPUT_PATH, 
+                                    species.rel_path(goaName))
+        self.cytoplasmicProteins = self.find_cytoplasmic()
 
-goData = np.genfromtxt(goPath, dtype=None, 
-                       delimiter='\t', 
-                       skip_header=31,
-                       comments='!',
-                       names=goDataHeader)
+    
+    def find_cytoplasmic(self):
+        goData = np.genfromtxt(self.goPath, 
+                                    dtype=None, 
+                                    delimiter='\t', 
+                                    skip_header=31,
+                                    comments='!',
+                                    names=self.goDataHeader)
+        
+        relevant = np.logical_and(goData['taxon'] == 'taxon:%s' % self.taxonCode,
+                                  goData['evidence'] != 'IEA')
+        inCytoplasm = np.logical_and(
+            relevant,
+            np.logical_or(goData['GOID'] == 'GO:0005829',
+                          goData['GOID'] == 'GO:0005737')
+        )
+        cytoplasmic = goData[inCytoplasm]
+        return set(cytoplasmic['objID'])
 
+    def is_cytoplasmic(self, pID):
+        return pID in self.cytoplasmicProteins
 
-relevant = np.logical_and(goData['taxon'] == 'taxon:9606', # human
-                          goData['evidence'] != 'IEA')
-inCytoplasm = np.logical_and(
-    relevant,
-    np.logical_or(goData['GOID'] == 'GO:0005829',
-                  goData['GOID'] == 'GO:0005737')
-)
-cytoplasmic = goData[inCytoplasm]
-cytoplasmicProteins = set(cytoplasmic['objID'])
-
-@np.vectorize
-def is_cytoplasmic(pID):
-    return pID in cytoplasmicProteins
 
 

@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import Ridge
 from helpers import column_stack
-import go_helper
+from go_helper import GO
 from settings import *
 #from DataRemap import remap
 
@@ -69,7 +69,11 @@ def combine_features(species):
     #
     # keep only cytoplasmic proteins
     #
-    cytoplasmic = go_helper.is_cytoplasmic(pIDs['Uniprot'])
+    go = GO(species)
+    @np.vectorize
+    def is_cytoplasmic(pid):
+        return go.is_cytoplasmic(pid)
+    cytoplasmic = is_cytoplasmic(pIDs['Uniprot'])
     pIDs = pIDs[cytoplasmic]
     featuresStacked = featuresStacked[cytoplasmic]
 
@@ -94,9 +98,9 @@ def combine_features(species):
     #
     numOfFeatures = len(featuresStacked[0])
     data = np.genfromtxt(combinedFeaturePath, 
-                                  dtype=float, skip_header=1,
-                                  usecols=np.arange(numOfFeatures)+1, #skip id column
-                                  delimiter='\t')
+                         dtype=float, skip_header=1,
+                         usecols=np.arange(numOfFeatures)+1, #skip id column
+                         delimiter='\t')
     featuresArray = data[:,1:]
     halfLifeArray = data[:,0]
 

@@ -9,7 +9,9 @@ class MySPC(SpeciesConnectivityMixin):
     SPECIES = Species.ALL_SPECIES[__name__]
     ### Register a few context for the species
     SPECIES.context.update({
-        'gffName': 'uniprot-taxonomy%3A9606+AND+reviewed%3Ayes+AND+keyword%3A181.gff',
+        'gffName': 'uniprot-taxonomy%3A9606+AND+reviewed%3Ayes+AND+keyword%3A181.gff', # protein slicing and modification
+        'goaName': 'gene_association.goa_human', # gene ontology
+        'taxonNum': '9606',
         'fastaName': '',
     })
 
