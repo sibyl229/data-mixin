@@ -12,17 +12,22 @@ Intended to be inherited by concrete data classes that deal with specific data. 
 
     
     @abstractmethod
-    def __init__(self, featureFileName, idColName, usecols=None):
+    def __init__(self, featureFileName, idColName, usecols=None, skip_header=0):
         # read data from file
         self.featureFileName = featureFileName
         self.featureFilePath = os.path.join(RAW_INPUT_PATH, 
                                             self.featureFileName)
-        self.rawdata = np.genfromtxt(self.featureFilePath, delimiter='\t', 
-            usecols=usecols, #Note None would include all columns
-            dtype=None, names=True)
+        #import pdb; pdb.set_trace()
+        self.rawdata = np.genfromtxt(self.featureFilePath, 
+                                     delimiter='\t', 
+                                     skip_header=skip_header, 
+                                     usecols=usecols,  
+                                     # Note None would include all columns
+                                     dtype=None, 
+                                     names=True)
 
         # extract protein id and features
-        self.idColName = 'Uniprot'
+        self.idColName = idColName
         self.dataColNames = \
             [colName for colName in self.rawdata.dtype.names \
              if colName != self.idColName]

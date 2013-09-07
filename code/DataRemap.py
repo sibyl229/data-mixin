@@ -53,9 +53,9 @@ def _get_data_of_target(targetProtList, sourceProtIds, sourceData, outputPath=No
 
     structTargetProtList = \
         np.zeros((targetProtList.shape[0],),
-                  dtype=[('Uniprot', targetProtList.dtype.str),
+                  dtype=[('PrimaryID', targetProtList.dtype.str),
                          ('hasValue',int)])
-    structTargetProtList['Uniprot'] = targetProtList
+    structTargetProtList['PrimaryID'] = targetProtList
     structTargetProtList['hasValue'] = (selectedRows!=newEndIndex)
     targetIDAndData = column_stack(
         structTargetProtList, 

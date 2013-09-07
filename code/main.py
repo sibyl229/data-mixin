@@ -17,6 +17,7 @@ from settings import *
 ###their file locations and preprocessing steps
 species_choices = [
     Species('species.human', 'Human'),
+    Species('species.yeast', 'Yeast'),
 ]
 
 

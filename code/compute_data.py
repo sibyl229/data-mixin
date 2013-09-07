@@ -32,8 +32,8 @@ Different from AbstractData class, this one is extended by classes that compute 
 
         features = np.genfromtxt(self.featureFilePath, delimiter='\t', 
                 dtype=None, names=True)
-        self._protIds = features['Uniprot']
-        self._dataArray = features[[f for f in features.dtype.names if f != 'Uniprot']]
+        self._protIds = features['PrimaryID']
+        self._dataArray = features[[f for f in features.dtype.names if f != 'PrimaryID' and f != 'OtherID']]
 
 
     def get_all_data(self):
@@ -51,8 +51,7 @@ Different from AbstractData class, this one is extended by classes that compute 
         a 'Uniprot' field for protein id, and additional fields for feature scores'''
         pass
         
-    @staticmethod
-    def backup_scores(scores, backupPath):
+    def backup_scores(self, scores, backupPath):
         header = scores.dtype.names
         with open(backupPath, 'w') as f:
             delimiter = '\t'
