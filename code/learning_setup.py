@@ -41,18 +41,18 @@ def combine_features(species):
             #
             # extract protein id, half-life, and features
             #
-            excluded = ['Uniprot','hasValue'] # excluded from featuresStacked; other plans for these columns
+            excluded = ['PrimaryID','hasValue'] # excluded from featuresStacked; other plans for these columns
             featureColNames = \
                 [colName for colName in feature.dtype.names \
                  if colName not in excluded]
 
             # stacking features
             if pIDs == None:
-                pIDs = feature[['Uniprot']] # This is a structured array.
+                pIDs = feature[['PrimaryID']] # This is a structured array.
                 featuresStacked = feature[featureColNames]
                 allHasValue = feature['hasValue']
             else:
-                if np.all(pIDs['Uniprot'] == feature['Uniprot']): 
+                if np.all(pIDs['PrimaryID'] == feature['PrimaryID']): 
                     featuresStacked = column_stack(featuresStacked,
                                                    feature[featureColNames])
                     allHasValue = np.logical_and(allHasValue, feature['hasValue'])
@@ -73,7 +73,7 @@ def combine_features(species):
     @np.vectorize
     def is_cytoplasmic(pid):
         return go.is_cytoplasmic(pid)
-    cytoplasmic = is_cytoplasmic(pIDs['Uniprot'])
+    cytoplasmic = is_cytoplasmic(pIDs['PrimaryID'])
     pIDs = pIDs[cytoplasmic]
     featuresStacked = featuresStacked[cytoplasmic]
 
@@ -96,6 +96,7 @@ def combine_features(species):
     #
     # Normalized features, and backup
     #
+    #import pdb; pdb.set_trace()
     numOfFeatures = len(featuresStacked[0])
     data = np.genfromtxt(combinedFeaturePath, 
                          dtype=float, skip_header=1,
@@ -197,8 +198,8 @@ if __name__ == '__main__':
     numRows = 2
     numPerRow = 2
     perSheet = numPerRow * numRows
-    pp = PdfPages('fig/plot_features.pdf')
-    pp2 = PdfPages('fig/plot_features2.pdf')
+    pp = PdfPages('../fig/plot_features.pdf')
+    pp2 = PdfPages('../fig/plot_features2.pdf')
     #chosenColumns = np.array([not trivialCol(combinedFeatures[nm]) for nm in otherColNames])
     chosenColumns = np.array([True for nm in otherColNames])
     chosenColumnNames = np.array(otherColNames)[chosenColumns]

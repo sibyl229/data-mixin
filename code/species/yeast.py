@@ -37,9 +37,6 @@ class DegRateData(AbstractData, MySPC):
             lines = infile.readlines()
             with open(cleanedFilePath, 'w') as outfile:
                 for i, ln in enumerate(lines[5:]):
-                    # lnlen = len(ln.split('\t'))
-                    # if lnlen != 4:
-                    #     print i, lnlen, ln.split('\t')
                     outfile.write(ln.rstrip()+'\r\n')
         
 
@@ -81,7 +78,6 @@ class UniprotToSGD(object):
         otherColNames = [nm for nm in data.dtype.names if nm != currIDcolName]
         annotated = column_stack(idColumns,
                                  data[otherColNames])
-        import pdb; pdb.set_trace()        
         return annotated[ mappedIDs!='' ]
                 
 
@@ -101,15 +97,16 @@ class MyDisorderData(DisorderData, MySPC):
 
     def backup_scores(self, scores, backupPath):
         scoresNew = UniprotToSGD(self.SPECIES).annotate(scores, 'Uniprot')
-        import pdb; pdb.set_trace()        
         super(MyDisorderData, self).backup_scores(scoresNew, backupPath)
 
-# class MyDegrMotifData(DegrMotifData, MySPC):    
-#     def __init__(self, forceCompute=False):
-#         super(MyDegrMotifData, self).__init__(
-#             rawInputName=self.path('MDB_Homo_sapiens/disorder_consensus.fasta'),
-#             featureFileName=self.path('degr_motif.tsv'),
-#             forceCompute=forceCompute)
+       # import pdb; pdb.set_trace()        
+
+class MyDegrMotifData(DegrMotifData, MySPC):    
+    def __init__(self, forceCompute=False):
+        super(MyDegrMotifData, self).__init__(
+            rawInputName=self.path('MDB_Saccharomyces_cerevisiae_(strain_ATCC_204508_|_S288c)/disorder_consensus.fasta'),
+            featureFileName=self.path('degr_motif.tsv'),
+            forceCompute=forceCompute)
 
 # class MySeqData(SeqData, MySPC):
 #     def __init__(self, forceCompute=False):
@@ -118,46 +115,13 @@ class MyDisorderData(DisorderData, MySPC):
 #             featureFileName=self.path('seq_characters.tsv'),
 #             forceCompute=forceCompute)
 
-# class MySecStructData(SecStructData, MySPC):
-#     def __init__(self, forceCompute=False):
-#         super(MySecStructData, self).__init__(
-#             rawInputName=self.path('MDB_Homo_sapiens/annotations.fasta'),
-#             featureFileName=self.path('sec_struct.tsv'),
-#             forceCompute=forceCompute)
+class MySecStructData(SecStructData, MySPC):
+    def __init__(self, forceCompute=False):
+        super(MySecStructData, self).__init__(
+            rawInputName=self.path('MDB_Saccharomyces_cerevisiae_(strain_ATCC_204508_|_S288c)/annotations.fasta'),
+            featureFileName=self.path('sec_struct.tsv'),
+            forceCompute=forceCompute)
 
-# class MyUbqSitesData(UbqSitesData, MySPC):
-#     def __init__(self, forceCompute=False):
-#         super(MyUbqSitesData, self).__init__(            
-#             rawInputName = 'Ubiquitination_site_dataset', #input shared among species
-#             featureFileName = self.path('Ubiquitination_site.tsv'),
-#             organism='human',
-#             forceCompute=forceCompute)
 
-# class MyAcetSitesData(AcetSitesData):
-#     def __init__(self, forceCompute=False):
-#         super(MyAcetSitesData, self).__init__(
-#             rawInputName = 'Acetylation_site_dataset',
-#             featureFileName = self.path('Acetylation_site.tsv'), 
-#             organism='human',
-#             forceCompute=forceCompute
-#         )
-
-# class MyPhosphoSitesData(PhosphoSitesData, MySPC):
-#     def __init__(self, forceCompute=False):
-#         super(MyPhosphoSitesData, self).__init__(
-#             rawInputName = 'Phosphorylation_site_dataset',
-#             featureFileName = self.path('Phosphorylation_site.tsv'),
-#             organism='human',
-#             forceCompute=forceCompute
-#         )
-
-# class MyMetSitesData(MetSitesData, MySPC):
-#     def __init__(self, forceCompute=False):
-#         super(MyMetSitesData, self).__init__(
-#             rawInputName = 'Methylation_site_dataset',
-#             featureFileName = self.path('Methylation_site.tsv'),
-#             organism='human',
-#             forceCompute=forceCompute
-#         )
 
 

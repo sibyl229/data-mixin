@@ -48,7 +48,10 @@ class GO(object):
                           goData['GOID'] == 'GO:0005737')
         )
         cytoplasmic = goData[inCytoplasm]
-        return set(cytoplasmic['objID'])
+        protIDs = set(cytoplasmic['objID'])
+        protIDs.update(cytoplasmic['objSynonym']) 
+        #so multiple ids of the protein can be used to determine if its cytoplasmic
+        return protIDs
 
     def is_cytoplasmic(self, pID):
         return pID in self.cytoplasmicProteins
