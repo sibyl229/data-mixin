@@ -5,28 +5,33 @@ import scipy as sp
 import matplotlib.pyplot as plt
 from sklearn.linear_model import Ridge
 from settings import *
-import learning_setup
+#import learning_setup
 
 
 #
 # fit linear model
 #
-normalizedFeatures = learning_setup.normalizedFeatures
-halfLifeArray = learning_setup.halfLifeArray
-ridge = Ridge()
-ridge.fit(normalizedFeatures, halfLifeArray)
-yHat = ridge.predict(normalizedFeatures)
-print sp.stats.pearsonr(halfLifeArray, yHat)
+def simple_linear(normalizedFeaturePath):
+    data = np.genfromtxt(normalizedFeaturePath, dtype=None, skip_header=1, names=None, delimiter='\t')
+    nonstatbleProteins = data[:,0] != 300
+    data = data[nonstatbleProteins]
+    halfLifes = data[:,0]
+    normalizedFeatures = data[:,1:]
+
+    ridge = Ridge()
+    ridge.fit(normalizedFeatures, halfLifes)
+    yHat = ridge.predict(normalizedFeatures)
+    print data.shape
+    print sp.stats.pearsonr(halfLifes, yHat)
+
+    ax = plt.subplot(aspect='equal')
+    ax.plot(halfLifes, yHat, 'o')
+    ax.set_ylim(0,200)
+    ax.set_xlim(0,200)
+    ax.set_title('Correlation between the real and the predicted')
+    plt.show()
 
 
-ax = plt.subplot(aspect='equal')
-ax.plot(halfLifeArray, yHat, 'o')
-ax.set_ylim(0,60)
-ax.set_xlim(0,60)
-ax.set_title('Correlation between the real and the predicted')
-plt.show()
-
-#import pdb; pdb.set_trace()
 '''
 degr motif (Ken box)
 number of Lysine

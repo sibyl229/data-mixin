@@ -6,6 +6,7 @@ from data import *
 from DataRemap import remap
 from species.base import Species
 from learning_setup import combine_features
+from linear import simple_linear
 from settings import *
 
 ### Register species modules HERE!
@@ -62,6 +63,13 @@ Enter 'A' for all features and 'B' for Returning to Previous Step
         dc(forceCompute=True)
     return
 
+def predict(species):
+    normalizedFeaturePath = \
+        os.path.join(CLEAN_INPUT_PATH,
+                     species.rel_path('normalized_features.tsv'))
+    simple_linear(normalizedFeaturePath)
+    return
+
 
 class MenuReturn(Exception):
     pass
@@ -91,6 +99,7 @@ if __name__ == '__main__':
                         ('Compute Features', lambda: compute_features(species)),
                         ('Map Features', lambda: remap(species)),
                         ('Combine Features', lambda: combine_features(species)),
+                        ('Predict', lambda: predict(species)),
                         ('Back to Previous', raise_menu_return_exception)
                     ]
                     t2 = lookup_table(operations, f=lambda itm: itm[0])

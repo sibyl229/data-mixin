@@ -82,6 +82,7 @@ def combine_features(species):
     #
     halfLifeColumnName = species.HLDataClass.HALF_LIFE_COL_NAME
     halfLifes = featuresStacked[[halfLifeColumnName]]
+    halfLifes.dtype.names = ('Half_Life',)
     otherColNames = \
         [cn for cn in featuresStacked.dtype.names if cn != halfLifeColumnName]
     combinedFeatures = column_stack(pIDs, halfLifes, 
