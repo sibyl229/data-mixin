@@ -58,7 +58,6 @@ def combine_features(species):
                     allHasValue = np.logical_and(allHasValue, feature['hasValue'])
                 else:
                     raise Exception('Mismatch protein ids. Please only combine features on the same list of proteins')
-            import pdb; pdb.set_trace()
 
 
     #

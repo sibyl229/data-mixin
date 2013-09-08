@@ -71,7 +71,7 @@ class DegRateData(AbstractData, MySPC):
         self.clean_file(originalFileName, featureFileName) 
         idColName = 'ORF'
         super(DegRateData, self).__init__(
-            featureFileName, idColName)
+            featureFileName, idColName, usecols=[0,3])
 
     def clean_file(self, originalFileName, cleanedFileName):
         '''fix some weirdness of the file, such as inconsistent column number in some entries'''
@@ -82,10 +82,6 @@ class DegRateData(AbstractData, MySPC):
             with open(cleanedFilePath, 'w') as outfile:
                 for i, ln in enumerate(lines[5:]):
                     outfile.write(ln.rstrip()+'\r\n')
-
-    def compute_scores(self):
-        scores = super(DegRateData, self).compute_scores()
-        import pdb; pdb.set_trace()
         
 
 
@@ -106,13 +102,16 @@ class MyDisorderData(DisorderData, MySPC):
         originalFilePath = os.path.join(RAW_INPUT_PATH, originalFileName)
         cleanedFilePath = os.path.join(RAW_INPUT_PATH, cleanedFileName)
         idMapper = UniprotToSGD(self.SPECIES)
+        uniqueId = set()
         with open(cleanedFilePath, 'w') as outfile:
             for record in SeqIO.parse(open(originalFilePath, 'r'), 'fasta') :
                 uniprotID = record.id
                 sysName = idMapper.translateID(uniprotID)
-                seq = str(record.seq)
-                newRecoreStr = '>%s|%s\n%s\n' % (sysName, uniprotID, seq)
-                outfile.write(newRecoreStr)
+                if sysName and not sysName in uniqueId:
+                    uniqueId.add(sysName)
+                    seq = str(record.seq)
+                    newRecoreStr = '>%s\n%s\n' % (sysName, seq)
+                    outfile.write(newRecoreStr)
         return
 
     # def compute_scores(self, scores, backupPath):
@@ -120,12 +119,12 @@ class MyDisorderData(DisorderData, MySPC):
     #     return scoresNew
 
 
-# class MyDegrMotifData(DegrMotifData, MySPC):    
-#     def __init__(self, forceCompute=False):
-#         super(MyDegrMotifData, self).__init__(
-#             rawInputName=self.path('disorder_consensus_cleaned.fasta'),
-#             featureFileName=self.path('degr_motif.tsv'),
-#             forceCompute=forceCompute)
+class MyDegrMotifData(DegrMotifData, MySPC):    
+    def __init__(self, forceCompute=False):
+        super(MyDegrMotifData, self).__init__(
+            rawInputName=self.path('disorder_consensus_cleaned.fasta'),
+            featureFileName=self.path('degr_motif.tsv'),
+            forceCompute=forceCompute)
 
 # class MySeqData(SeqData, MySPC):
 #     def __init__(self, forceCompute=False):
