@@ -1,44 +1,10 @@
 import os
+from Bio import SeqIO
 from compute_data import *
 from data import *
 from species.base import *
 from helpers import column_stack
 
-
-
-class MySPC(SpeciesConnectivityMixin):
-    SPECIES = Species.ALL_SPECIES[__name__]
-    ### Register a few context for the species
-    SPECIES.context.update({
-        'gffName': '',
-        'goaName': 'gene_association', # gene ontology
-        'taxonNum': '4932',
-        'seqName': 'orf_trans.fasta', 
-    })
-
-## class that contains Half Lifes
-## used as template for organizing other features
-class DegRateData(AbstractData, MySPC):
-    CONTAINS_HALF_LIFE_DATA = True
-    HALF_LIFE_COL_NAME = 'Corrected Half Life'
-    def __init__(self):
-        originalFileName = self.path('pnas_0605420103_SuppDataSet.txt')
-        featureFileName = self.path('pnas_0605420103_SuppDataSet_cleaned.txt')
-        self.clean_file(originalFileName, featureFileName) 
-        idColName = 'ORF'
-        super(DegRateData, self).__init__(
-            featureFileName, idColName)
-
-    def clean_file(self, originalFileName, cleanedFileName):
-        '''fix some weirdness of the file, such as inconsistent column number in some entries'''
-        originalFilePath = os.path.join(RAW_INPUT_PATH, originalFileName)
-        cleanedFilePath = os.path.join(RAW_INPUT_PATH, cleanedFileName)
-        with open(originalFilePath, 'r') as infile:
-            lines = infile.readlines()
-            with open(cleanedFilePath, 'w') as outfile:
-                for i, ln in enumerate(lines[5:]):
-                    outfile.write(ln.rstrip()+'\r\n')
-        
 
 class UniprotToSGD(object):
     '''maps Uniprot/Swissprot id to SGD id'''
@@ -64,8 +30,11 @@ class UniprotToSGD(object):
         self.idLookup = {uniprotID: sysName for uniprotID, sysName in cleanMapping}
          
     
+    def translateID(self, anID):
+        return self.idLookup.get(anID, '')
+        
     def mapIDs(self, ids):
-        mappedIDs = [self.idLookup.get(idx, '') for idx in ids]
+        mappedIDs = [self.translateID(idx) for idx in ids]
         return np.array(mappedIDs)
 
     def annotate(self, data, currIDcolName):
@@ -79,34 +48,84 @@ class UniprotToSGD(object):
         annotated = column_stack(idColumns,
                                  data[otherColNames])
         return annotated[ mappedIDs!='' ]
-                
 
+
+class MySPC(SpeciesConnectivityMixin):
+    SPECIES = Species.ALL_SPECIES[__name__]
+    ### Register a few context for the species
+    SPECIES.context.update({
+        'gffName': '',
+        'goaName': 'gene_association', # gene ontology
+        'taxonNum': '4932',
+        'seqName': 'orf_trans.fasta', 
+    })
+
+## class that contains Half Lifes
+## used as template for organizing other features
+class DegRateData(AbstractData, MySPC):
+    CONTAINS_HALF_LIFE_DATA = True
+    HALF_LIFE_COL_NAME = 'Corrected_Half_Life'
+    def __init__(self):
+        originalFileName = self.path('pnas_0605420103_SuppDataSet.txt')
+        featureFileName = self.path('pnas_0605420103_SuppDataSet_cleaned.txt')
+        self.clean_file(originalFileName, featureFileName) 
+        idColName = 'ORF'
+        super(DegRateData, self).__init__(
+            featureFileName, idColName)
+
+    def clean_file(self, originalFileName, cleanedFileName):
+        '''fix some weirdness of the file, such as inconsistent column number in some entries'''
+        originalFilePath = os.path.join(RAW_INPUT_PATH, originalFileName)
+        cleanedFilePath = os.path.join(RAW_INPUT_PATH, cleanedFileName)
+        with open(originalFilePath, 'r') as infile:
+            lines = infile.readlines()
+            with open(cleanedFilePath, 'w') as outfile:
+                for i, ln in enumerate(lines[5:]):
+                    outfile.write(ln.rstrip()+'\r\n')
+
+    def compute_scores(self):
+        scores = super(DegRateData, self).compute_scores()
+        import pdb; pdb.set_trace()
         
-                                    
-        
-        
+
 
 #Below are other feature classes
 class MyDisorderData(DisorderData, MySPC):
 
     def __init__(self, forceCompute=False):
+        originalRawInputName = self.path('disorder_consensus.fasta')
+        rawInputName = self.path('disorder_consensus_cleaned.fasta')
+        self.clean_file(originalRawInputName, rawInputName)
         super(MyDisorderData, self).__init__(
-            rawInputName=self.path('disorder_consensus.fasta'),
+            rawInputName=rawInputName,
             featureFileName=self.path('disorder.tsv'),
             forceCompute=forceCompute)
 
-    def backup_scores(self, scores, backupPath):
-        scoresNew = UniprotToSGD(self.SPECIES).annotate(scores, 'Uniprot')
-        super(MyDisorderData, self).backup_scores(scoresNew, backupPath)
+    def clean_file(self, originalFileName, cleanedFileName):
+        '''fix some weirdness of the file, such as inconsistent column number in some entries'''
+        originalFilePath = os.path.join(RAW_INPUT_PATH, originalFileName)
+        cleanedFilePath = os.path.join(RAW_INPUT_PATH, cleanedFileName)
+        idMapper = UniprotToSGD(self.SPECIES)
+        with open(cleanedFilePath, 'w') as outfile:
+            for record in SeqIO.parse(open(originalFilePath, 'r'), 'fasta') :
+                uniprotID = record.id
+                sysName = idMapper.translateID(uniprotID)
+                seq = str(record.seq)
+                newRecoreStr = '>%s|%s\n%s\n' % (sysName, uniprotID, seq)
+                outfile.write(newRecoreStr)
+        return
 
-       # import pdb; pdb.set_trace()        
+    # def compute_scores(self, scores, backupPath):
+    #     scoresNew = UniprotToSGD(self.SPECIES).annotate(scores, 'Uniprot')
+    #     return scoresNew
 
-class MyDegrMotifData(DegrMotifData, MySPC):    
-    def __init__(self, forceCompute=False):
-        super(MyDegrMotifData, self).__init__(
-            rawInputName=self.path('MDB_Saccharomyces_cerevisiae_(strain_ATCC_204508_|_S288c)/disorder_consensus.fasta'),
-            featureFileName=self.path('degr_motif.tsv'),
-            forceCompute=forceCompute)
+
+# class MyDegrMotifData(DegrMotifData, MySPC):    
+#     def __init__(self, forceCompute=False):
+#         super(MyDegrMotifData, self).__init__(
+#             rawInputName=self.path('disorder_consensus_cleaned.fasta'),
+#             featureFileName=self.path('degr_motif.tsv'),
+#             forceCompute=forceCompute)
 
 # class MySeqData(SeqData, MySPC):
 #     def __init__(self, forceCompute=False):
@@ -115,12 +134,12 @@ class MyDegrMotifData(DegrMotifData, MySPC):
 #             featureFileName=self.path('seq_characters.tsv'),
 #             forceCompute=forceCompute)
 
-class MySecStructData(SecStructData, MySPC):
-    def __init__(self, forceCompute=False):
-        super(MySecStructData, self).__init__(
-            rawInputName=self.path('MDB_Saccharomyces_cerevisiae_(strain_ATCC_204508_|_S288c)/annotations.fasta'),
-            featureFileName=self.path('sec_struct.tsv'),
-            forceCompute=forceCompute)
+# class MySecStructData(SecStructData, MySPC):
+#     def __init__(self, forceCompute=False):
+#         super(MySecStructData, self).__init__(
+#             rawInputName=self.path('MDB_Saccharomyces_cerevisiae_(strain_ATCC_204508_|_S288c)/annotations.fasta'),
+#             featureFileName=self.path('sec_struct.tsv'),
+#             forceCompute=forceCompute)
 
 
 

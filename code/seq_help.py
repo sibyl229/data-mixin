@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import re
 import json
 from Bio import SeqIO
 from settings import *
@@ -21,7 +22,11 @@ class MySequence(object):
     def get_seq(self, key):
         return self.record_dict.get(key, None)
 
-    def extract_pid(self, key):
-        db, pid, gene_id = key.split('|')
+    @staticmethod
+    def extract_pid(key):
+        match = re.search(r'[A-Z0-9]{5,7}', key)
+        if not match:
+            print key
+        pid = match.group()
         return pid
 

@@ -157,8 +157,8 @@ class DisorderData(AbstractComputedData):
             ctd = [term_disorder(aaDisorder, l, 'C') for l in varying_lengths]
             ntd = [term_disorder(aaDisorder, l, 'N') for l in varying_lengths]
             intnld = [internal_disorder(aaDisorderStr, l) for l in varying_lengths]
-
-            return (record.id, 
+            pid = MySequence.extract_pid(record.id)
+            return (pid, 
                     totalDisorderAA,
                     totalDisorderRatio,
                    ) + tuple(ntd) \
@@ -166,7 +166,7 @@ class DisorderData(AbstractComputedData):
                    + tuple(intnld)
 
 
-        dtype=[('Uniprot', '|S20'),
+        dtype=[('PrimaryID', '|S20'),
                ('totalDisorderAA', int),
                ('totalDisorderRatio', float),
         ] + [('ntermDisorder'+str(l), float) for l in varying_lengths] \
@@ -257,8 +257,8 @@ class DegrMotifData(DisorderData):
 
         def score(disorderSeq, seq):
             dregions = self.disorder_regions(disorderSeq, seq)
-            KENPattern = r'KEN...N'
-            DPattern = r'R..L....N'
+            KENPattern = r'KEN...[NDE]'
+            DPattern = r'R..L....[ND]'
             kCount = 0
             dCount = 0
             for rgn in dregions:
@@ -273,7 +273,7 @@ class DegrMotifData(DisorderData):
             return (kCount, dCount, kCountWhole, dCountWhole)
 
 
-        dtype=[('Uniprot', '|S20'),
+        dtype=[('PrimaryID', '|S20'),
                ('numKENbox', int),
                ('numDbox', int),
                ('numKENboxWhole', int),
