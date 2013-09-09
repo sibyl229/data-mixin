@@ -28,6 +28,8 @@ def simple_linear(normalizedFeaturePath):
     ax.plot(halfLifes, yHat, 'o')
     ax.set_ylim(0,200)
     ax.set_xlim(0,200)
+    ax.set_xlabel('Actual Half-life')
+    ax.set_ylabel('Predicted Half-life')
     ax.set_title('Correlation between the real and the predicted')
     plt.show()
 

@@ -12,7 +12,7 @@ Intended to be inherited by concrete data classes that deal with specific data. 
 
     
     @abstractmethod
-    def __init__(self, featureFileName, idColName, usecols=None, skip_header=0):
+    def __init__(self, featureFileName, idColName, usecols=None, skip_header=0, names=True):
         # read data from file
         self.featureFileName = featureFileName
         self.featureFilePath = os.path.join(RAW_INPUT_PATH, 
@@ -24,16 +24,16 @@ Intended to be inherited by concrete data classes that deal with specific data. 
                                      usecols=usecols,  
                                      # Note None would include all columns
                                      dtype=None, 
-                                     names=True)
+                                     names=names)
 
         # extract protein id and features
         self.idColName = idColName
         self.dataColNames = \
             [colName for colName in self.rawdata.dtype.names \
              if colName != self.idColName]
+
         self._extract_data()
         
-
 
     def get_all_data(self):
         return self._protIds, self._dataArray
@@ -44,7 +44,7 @@ Intended to be inherited by concrete data classes that deal with specific data. 
         vectorized_get_major_id = np.vectorize(self.get_major_id)
         self._protIds = vectorized_get_major_id(rawProtIDs)
         self._dataArray = self.rawdata[self.dataColNames]
-        return
+        return self._protIds, self._dataArray
 
     @staticmethod
     def get_major_id(idstring):

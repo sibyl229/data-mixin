@@ -140,6 +140,74 @@ class MyDegrMotifData(DegrMotifData, MySPC):
 #             featureFileName=self.path('sec_struct.tsv'),
 #             forceCompute=forceCompute)
 
+class PropertiesData(AbstractData, MySPC):
+    headerInfo = \
+'''
+0 	Orf_name
+1 	SGDID
+2 	MOLECULAR WEIGHT (in Daltons)
+3 	PI
+4 	CAI (Codon Adaptation Index)
+5 	PROTEIN LENGTH
+6 	N TERM SEQ
+7 	C TERM SEQ
+8 	CODON BIAS
+9 	ALA
+10 	ARG
+11 	ASN
+12 	ASP
+13 	CYS
+14 	GLN
+15 	GLU
+16 	GLY
+17 	HIS
+18 	ILE
+19 	LEU
+20 	LYS
+21 	MET
+22 	PHE
+23 	PRO
+24 	SER
+25 	THR
+26 	TRP
+27 	TYR
+28 	VAL
+29 	FOP SCORE (Frequency of Optimal Codons)
+30 	GRAVY SCORE (Hydropathicity of Protein)
+31 	AROMATICITY SCORE (Frequency of aromatic amino acids: Phe, Tyr, Trp)
+32 	Feature type (ORF classification: Verified, Uncharacterized, Dubious'''
 
+    headerAll = headerInfo.strip().split('\n')
+
+    def __init__(self, forceCompute=False):
+        featureFileName = self.path('protein_properties.tab')
+        idColName = 'Orf_name'
+        usecols = sorted(list(set(range(33)) - set([1, 6, 7, 32])))
+        useColNames = [self.abbr(self.headerAll[col]) \
+                       for col in usecols]
+        super(PropertiesData, self).__init__(
+            featureFileName, idColName, usecols=usecols, names=useColNames)
+
+    def abbr(self, name):
+        '''make shorter field name'''
+        print name
+        name = re.search(r'\d+\s+(.*)', name).group(1)
+        name = re.sub(r'\(.*\)', '', name)
+        name = re.sub('\s', '_', name.strip())
+        return name
+    
+    @staticmethod
+    def is_full_entry(t):
+        '''check if a tuple has nan value'''
+        t = tuple(t)
+        return not np.isnan(np.sum(t))
+
+    def _extract_data(self): 
+        '''remove records with missing values'''
+        idCol, data = super(PropertiesData, self)._extract_data()
+        fullEntries = np.array([self.is_full_entry(row) for row in data])
+
+        self.rawdata = self.rawdata[fullEntries]
+        return super(PropertiesData, self)._extract_data()
 
 
