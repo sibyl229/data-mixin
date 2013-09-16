@@ -212,7 +212,7 @@ class SecStructData(AbstractComputedData):
             return (fracHelix, fracSheet, fracBend, fracLoop)
 
 
-        dtype=[('Uniprot', '|S20'),
+        dtype=[('PrimaryID', '|S20'),
                ('fracHelix', float),
                ('fracSheet', float),
                ('fracBend', float),

@@ -126,12 +126,38 @@ class MyDegrMotifData(DegrMotifData, MySPC):
             featureFileName=self.path('degr_motif.tsv'),
             forceCompute=forceCompute)
 
-# class MySeqData(SeqData, MySPC):
-#     def __init__(self, forceCompute=False):
-#         super(MySeqData, self).__init__(
-#             rawInputName=self.path('MDB_Homo_sapiens/sequences.fasta'),
-#             featureFileName=self.path('seq_characters.tsv'),
-#             forceCompute=forceCompute)
+class MyNEnd(AbstractComputedData, MySPC):
+    def __init__(self, forceCompute=False):
+        rawInputName=self.path('pr400435d_si_001.tsv')
+        featureFileName=self.path('n-end.tsv')
+        super(MyNEnd, self).__init__(
+            rawInputName,
+            featureFileName,
+            forceCompute=forceCompute)
+
+
+    def compute_scores(self):
+
+        def score(entry):
+            pid = entry['Protein_Group_Accessions']
+            nEndAA = entry['first_6_amino_acids'][0].upper()
+            return (pid,
+                    nEndAA)
+
+        dtype = [('PrimaryID', '|S20'), ('nEnd', '|S5')]
+
+        nEndDat = np.genfromtxt(self.rawInputFilePath, 
+                                usecols=[1,3],
+                                skip_header=1, 
+                                autostrip=True,
+                                comments='!', # seems like '#' in names is mistreated as comment
+                                names=True, delimiter='\t', dtype=None,)
+
+        allScores = [score(entry) for entry in nEndDat]
+        allScores = np.array(allScores,dtype=dtype)
+
+        return allScores
+
 
 # class MySecStructData(SecStructData, MySPC):
 #     def __init__(self, forceCompute=False):
@@ -182,7 +208,7 @@ class PropertiesData(AbstractData, MySPC):
     def __init__(self, forceCompute=False):
         featureFileName = self.path('protein_properties.tab')
         idColName = 'Orf_name'
-        usecols = sorted(list(set(range(33)) - set([1, 6, 7, 32])))
+        usecols = sorted([0] + range(2,6)+[8, 20, 29, 30, 31])
         useColNames = [self.abbr(self.headerAll[col]) \
                        for col in usecols]
         super(PropertiesData, self).__init__(
