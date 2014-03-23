@@ -1,9 +1,28 @@
 *.pyc
+*.html
 *.*~
-\#*#
+\#*
+
+# data and output directories
 raw_inputs/
+data_clean/
+fig/
+figure/
+input/
+
+# scripts not for public
+fromOthers/
+
 gwREADME
 my_scratch.py
+scratch.r
 code/oldjunk/
 
+# automatically generated stuff
 .Rproj.user
+*.Rproj
+.Rhistory
+.DS_Store
+.RData
+.ropeproject/
+

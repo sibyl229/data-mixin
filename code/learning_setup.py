@@ -66,16 +66,16 @@ def combine_features(species):
     pIDs = pIDs[allHasValue]
     featuresStacked = featuresStacked[allHasValue]
     
-    # #
-    # # keep only cytoplasmic proteins
-    # #
-    # go = GO(species)
-    # @np.vectorize
-    # def is_cytoplasmic(pid):
-    #     return go.is_cytoplasmic(pid)
-    # cytoplasmic = is_cytoplasmic(pIDs['PrimaryID'])
-    # pIDs = pIDs[cytoplasmic]
-    # featuresStacked = featuresStacked[cytoplasmic]
+    #
+    # keep only cytoplasmic proteins
+    #
+    go = GO(species)
+    @np.vectorize
+    def is_cytoplasmic(pid):
+        return go.is_cytoplasmic(pid)
+    cytoplasmic = is_cytoplasmic(pIDs['PrimaryID'])
+    pIDs = pIDs[cytoplasmic]
+    featuresStacked = featuresStacked[cytoplasmic]
 
     #
     # backup the combined feature into single file

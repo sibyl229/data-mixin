@@ -152,7 +152,7 @@ class DisorderData(AbstractComputedData):
             totalDisorderAA = np.sum(aaDisorder)
             totalDisorderRatio = totalDisorderAA / len(record.seq)
 
-          #  import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
             
             ctd = [term_disorder(aaDisorder, l, 'C') for l in varying_lengths]
             ntd = [term_disorder(aaDisorder, l, 'N') for l in varying_lengths]
@@ -257,8 +257,8 @@ class DegrMotifData(DisorderData):
 
         def score(disorderSeq, seq):
             dregions = self.disorder_regions(disorderSeq, seq)
-            KENPattern = r'KEN...[NDE]'
-            DPattern = r'R..L....[ND]'
+            KENPattern = r'KEN...[ND]'
+            DPattern = r'R..L....[NDE]'
             kCount = 0
             dCount = 0
             for rgn in dregions:

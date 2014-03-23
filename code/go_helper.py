@@ -32,6 +32,11 @@ class GO(object):
         self.cytoplasmicProteins = self.find_cytoplasmic()
 
     
+    @np.vectorize
+    def synonyms(s):
+        names = s.split('|')
+        return names[0]#np.array(
+
     def find_cytoplasmic(self):
         goData = np.genfromtxt(self.goPath, 
                                     dtype=None, 
@@ -49,8 +54,9 @@ class GO(object):
         )
         cytoplasmic = goData[inCytoplasm]
         protIDs = set(cytoplasmic['objID'])
-        protIDs.update(cytoplasmic['objSynonym']) 
+        protIDs.update(self.synonyms(cytoplasmic['objSynonym'])) 
         #so multiple ids of the protein can be used to determine if its cytoplasmic
+        import pdb; pdb.set_trace()
         return protIDs
 
     def is_cytoplasmic(self, pID):

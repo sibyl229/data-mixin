@@ -45,6 +45,9 @@ relPath: directory for species specific data, relative to the RAW_INPUT_PATH'''
 
     def __str__(self):
         return 'Species: %s @ %s' % (self.speciesName, self.path(''))
+
+    def load(self):
+        return __import__(self.moduleName)
     
 
 
