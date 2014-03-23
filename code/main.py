@@ -9,6 +9,17 @@ from learning_setup import combine_features
 from linear import simple_linear
 from settings import *
 
+
+####
+# The Command Line User Interface
+# 
+# including the selection of a species and:
+#  0	Compute Features
+#  1	Map Features
+#  2	Combine Features
+#  3	Predict
+####
+
 ### Register species modules HERE!
 ### In the format of Species(modulename, alias), 
 ###where alias is also the species specific subdirectory in raw_inputs/

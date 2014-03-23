@@ -1,10 +1,14 @@
 *.pyc
 *.html
 *.*~
-\#*
+.\#*
+*\#
+
 
 # data and output directories
-raw_inputs/
+*cleaned.*
+raw_inputs/*
+!raw_inputs/Yeast/
 data_clean/
 fig/
 figure/
