@@ -1,10 +1,15 @@
+A Pipeline for Multiple Data Extraction & Integration
+========
 
+This pipeline is extracted from a previous project, where I needed to compute various features for human and yeast proteins, and look for correlation between protein half-life and these features.
+
+The pipeline aims to **organize** scripts that handle different types of data, **automate** data extraction and integration, and improve **extensibility**.
 
 I don't know if this would be useful for anyone, but I present this experimental pipeline here.
 
 
 
-## How to use it
+## Usage
 
 - Clone the repo
 
@@ -32,16 +37,17 @@ I don't know if this would be useful for anyone, but I present this experimental
 ### Add a new feature
 - Create a new class in the species module, say `code/species/sp1`, by extending **MySPC** and additionally
 
-    	- if the feature score already is in csv/tsv file, where each row includes the quantitative measurements and the identifier that you intend to keep, extend the AbstractData class (refer to data.py)
+  	 - if the feature score already is in csv/tsv file, where each row includes the quantitative measurements and the identifier that you intend to keep, extend the AbstractData class (refer to data.py)
 
-	- otherwise, extend the AbstractComputedData class (refer to compute_data.py), AND edit main() in compute_data.py to instantiate the new class (which computes scores for the feature)
+	 - otherwise, extend the AbstractComputedData class (refer to compute_data.py), AND edit main() in compute_data.py to instantiate the new class (which computes scores for the feature)
 
 - run code/main.py 
 
 
 ## Project Organization
 
-`raw_inputs/species_name/`  	   	 
+`raw_inputs/species_name/`
+	   	 
 - ALL data gathered, AND feature scores computed from those data
 
 `input/species_name/`
@@ -50,7 +56,7 @@ I don't know if this would be useful for anyone, but I present this experimental
 - contains preprocessed data (feature scores for **a select list of proteins**)	      	
 
 
-`code/'
+`code/`
 
 - `main.py` a command-line interface
 
@@ -85,7 +91,7 @@ pip install package_name
 
 
 
-<!-- have moved citation to raw_inputs/README.md 
+
 ## Citations
 
 1. Belle A, Tanay A, Bitincka L, Shamir R, O’Shea EK. 2006. Quantification of protein half-lives in the budding yeast proteome. Proc Natl Acad Sci U S A 103:13004–13009.
@@ -99,5 +105,3 @@ pip install package_name
 5. Venne AS, Vögtle F-N, Meisinger C, Sickmann A, Zahedi RP. 2013. Novel Highly Sensitive, Specific, and Straightforward Strategy for Comprehensive N-Terminal Proteomics Reveals Unknown Substrates of the Mitochondrial Peptidase Icp55. J. Proteome Res. 12:3823–3830.
 
 6. Burton JL, Solomon MJ. 2001. D box and KEN box motifs in budding yeast Hsl1p are required for APC-mediated degradation and direct binding to Cdc20p and Cdh1p. Genes Dev 15:2381–2395.
-
--->
