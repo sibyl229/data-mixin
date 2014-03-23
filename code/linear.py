@@ -34,10 +34,3 @@ def simple_linear(normalizedFeaturePath):
     plt.show()
 
 
-'''
-degr motif (Ken box)
-number of Lysine
-topfind (true n-end) or just remove M
-take different length at N and C end (
-yaakov levy weizmann
-'''

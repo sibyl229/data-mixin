@@ -17,7 +17,7 @@ from settings import *
 ### A module specifies data/features for a species, including: 
 ###their file locations and preprocessing steps
 species_choices = [
-    Species('species.human', 'Human'),
+   # Species('species.human', 'Human'), # unless you get data from me, too big for github
     Species('species.yeast', 'Yeast'),
 ]
 
